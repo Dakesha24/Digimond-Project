@@ -14,6 +14,302 @@
   </style>
   
   <script>window.THREE = { };</script>
+
+  <!-- TAMBAHKAN SEBELUM </head> di story.html -->
+<style>
+/* Fullscreen Button untuk di dalam Storyline */
+.storyline-fullscreen-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background-color: rgba(44, 62, 80, 0.9);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.storyline-fullscreen-btn:hover {
+  background-color: rgba(52, 73, 94, 0.95);
+  transform: scale(1.1);
+}
+
+.storyline-fullscreen-btn:active {
+  transform: scale(0.95);
+}
+
+.storyline-fullscreen-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Responsive untuk mobile */
+@media (max-width: 768px) {
+  .storyline-fullscreen-btn {
+    width: 32px;
+    height: 32px;
+    top: 8px;
+    right: 8px;
+    padding: 6px;
+  }
+  
+  .storyline-fullscreen-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Styling untuk berbagai tema Storyline */
+.theme-classic .storyline-fullscreen-btn {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.theme-modern .storyline-fullscreen-btn {
+  background-color: rgba(33, 150, 243, 0.9);
+}
+
+/* Ketika fullscreen */
+.storyline-in-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  background: #000;
+}
+</style>
+
+<script>
+// Storyline Internal Fullscreen Handler
+(function() {
+  'use strict';
+  
+  let fullscreenBtn = null;
+  let isFullscreen = false;
+  let storylineContainer = null;
+  let storylineFrame = null;
+  
+  // Fungsi untuk membuat tombol fullscreen
+  function createFullscreenButton() {
+    const btn = document.createElement('button');
+    btn.className = 'storyline-fullscreen-btn';
+    btn.title = 'Toggle Fullscreen';
+    btn.setAttribute('aria-label', 'Toggle Fullscreen');
+    
+    btn.innerHTML = `
+      <svg class="storyline-fullscreen-icon" viewBox="0 0 24 24">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    `;
+    
+    return btn;
+  }
+  
+  // Update icon berdasarkan status fullscreen
+  function updateIcon() {
+    if (!fullscreenBtn) return;
+    
+    const path = fullscreenBtn.querySelector('path');
+    if (isFullscreen) {
+      // Icon exit fullscreen
+      path.setAttribute('d', 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z');
+    } else {
+      // Icon enter fullscreen
+      path.setAttribute('d', 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z');
+    }
+  }
+  
+  // Fungsi untuk masuk/keluar fullscreen
+  function toggleFullscreen() {
+    if (!storylineContainer) return;
+    
+    if (!isFullscreen) {
+      // Masuk fullscreen
+      if (storylineContainer.requestFullscreen) {
+        storylineContainer.requestFullscreen();
+      } else if (storylineContainer.mozRequestFullScreen) {
+        storylineContainer.mozRequestFullScreen();
+      } else if (storylineContainer.webkitRequestFullscreen) {
+        storylineContainer.webkitRequestFullscreen();
+      } else if (storylineContainer.msRequestFullscreen) {
+        storylineContainer.msRequestFullscreen();
+      }
+    } else {
+      // Keluar fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  }
+  
+  // Handle perubahan fullscreen
+  function handleFullscreenChange() {
+    isFullscreen = !!(document.fullscreenElement || 
+                    document.mozFullScreenElement || 
+                    document.webkitFullscreenElement || 
+                    document.msFullscreenElement);
+    
+    updateIcon();
+    
+    if (storylineContainer) {
+      if (isFullscreen) {
+        storylineContainer.classList.add('storyline-in-fullscreen');
+      } else {
+        storylineContainer.classList.remove('storyline-in-fullscreen');
+      }
+    }
+  }
+  
+  // Mencari container Storyline
+  function findStorylineContainer() {
+    // Coba beberapa selector yang mungkin
+    const selectors = [
+      '#preso',
+      '[data-acc-text]',
+      '.slide-container',
+      '.storyline-container',
+      '#app',
+      '.cs-HTML'
+    ];
+    
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        return element;
+      }
+    }
+    
+    // Fallback ke body jika tidak ada yang ditemukan
+    return document.body;
+  }
+  
+  // Mencari frame/container yang tepat untuk tombol
+  function findButtonContainer() {
+    // Cari container yang memiliki posisi relative/absolute
+    const containers = document.querySelectorAll('#preso, [data-acc-text], .slide-container, .storyline-slide');
+    
+    for (const container of containers) {
+      const style = window.getComputedStyle(container);
+      if (style.position === 'relative' || style.position === 'absolute') {
+        return container;
+      }
+    }
+    
+    // Fallback ke preso atau body
+    return document.querySelector('#preso') || document.body;
+  }
+  
+  // Inisialisasi tombol
+  function initializeButton() {
+    storylineContainer = findStorylineContainer();
+    storylineFrame = findButtonContainer();
+    
+    if (!storylineFrame) {
+      console.log('Storyline container tidak ditemukan, coba lagi...');
+      return false;
+    }
+    
+    // Buat tombol jika belum ada
+    if (!fullscreenBtn) {
+      fullscreenBtn = createFullscreenButton();
+      
+      // Event listener untuk tombol
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
+      
+      // Pastikan container memiliki position relative
+      if (window.getComputedStyle(storylineFrame).position === 'static') {
+        storylineFrame.style.position = 'relative';
+      }
+      
+      // Tambahkan tombol ke container
+      storylineFrame.appendChild(fullscreenBtn);
+      
+      updateIcon();
+      
+      console.log('Storyline Fullscreen Button: Ditambahkan ke', storylineFrame);
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Tunggu sampai Storyline dimuat
+  function waitForStoryline() {
+    let attempts = 0;
+    const maxAttempts = 50; // 5 detik (50 x 100ms)
+    
+    const checkInterval = setInterval(() => {
+      attempts++;
+      
+      if (initializeButton() || attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        
+        if (attempts >= maxAttempts) {
+          console.log('Storyline Fullscreen: Timeout, menggunakan fallback');
+          // Fallback: tambahkan ke body dengan position fixed
+          if (!fullscreenBtn) {
+            fullscreenBtn = createFullscreenButton();
+            fullscreenBtn.style.position = 'fixed';
+            fullscreenBtn.style.top = '20px';
+            fullscreenBtn.style.right = '20px';
+            fullscreenBtn.style.zIndex = '99999';
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            document.body.appendChild(fullscreenBtn);
+            updateIcon();
+          }
+        }
+      }
+    }, 100);
+  }
+  
+  // Event listeners untuk fullscreen
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('msfullscreenchange', handleFullscreenChange);
+  
+  // Keyboard shortcut
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'F11') {
+      e.preventDefault();
+      toggleFullscreen();
+    }
+  });
+  
+  // Mulai inisialisasi
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForStoryline);
+  } else {
+    waitForStoryline();
+  }
+  
+  // Juga coba setelah window load (untuk memastikan semua script Storyline sudah jalan)
+  window.addEventListener('load', function() {
+    setTimeout(waitForStoryline, 500);
+  });
+  
+})();
+</script>
 </head>
 <body style="background: #FFFFFF" class="cs-HTML theme-classic">
   <!-- 360 -->
