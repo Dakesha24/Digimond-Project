@@ -14,6 +14,182 @@
   </style>
   
   <script>window.THREE = { };</script>
+
+  <!-- CLEAN FULLSCREEN BUTTON - Tambahkan sebelum </head> -->
+<style>
+.storyline-fs-btn {
+  background: rgba(44, 62, 80, 0.9);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  outline: none;
+}
+
+.storyline-fs-btn:hover { background: rgba(52, 73, 94, 0.95); transform: scale(1.05); }
+.storyline-fs-btn:active { transform: scale(0.95); }
+.storyline-fs-btn:focus { outline: 3px solid #4A90E2; outline-offset: 2px; }
+
+.storyline-fs-icon { fill: currentColor; pointer-events: none; }
+
+/* Desktop: inside frame */
+@media (min-width: 769px) {
+  .storyline-fs-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+  .storyline-fs-icon { width: 16px; height: 16px; }
+}
+
+/* Mobile: fixed position */
+@media (max-width: 768px) {
+  .storyline-fs-btn {
+    position: fixed !important;
+    top: 15px;
+    right: 15px;
+    z-index: 9999 !important;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+  .storyline-fs-icon { width: 20px; height: 20px; }
+}
+
+.storyline-fullscreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9998 !important; background: #000; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+
+<script>
+(function() {
+  'use strict';
+  
+  const isMobile = window.isMobile?.any || window.globals?.deviceView?.mobile || window.innerWidth <= 768;
+  let btn, isFS = false, container;
+  
+  // Create button
+  function createBtn() {
+    const button = document.createElement('button');
+    button.className = 'storyline-fs-btn';
+    button.setAttribute('aria-label', 'Toggle fullscreen');
+    button.setAttribute('title', 'Toggle Fullscreen');
+    button.innerHTML = `
+      <svg class="storyline-fs-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+      <span class="sr-only">Toggle fullscreen</span>
+    `;
+    return button;
+  }
+  
+  // Update icon and accessibility
+  function updateIcon() {
+    if (!btn) return;
+    const path = btn.querySelector('path');
+    const srText = btn.querySelector('.sr-only');
+    
+    if (isFS) {
+      path.setAttribute('d', 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z');
+      btn.setAttribute('aria-label', 'Exit fullscreen');
+      srText.textContent = 'Exit fullscreen';
+    } else {
+      path.setAttribute('d', 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z');
+      btn.setAttribute('aria-label', 'Enter fullscreen');
+      srText.textContent = 'Enter fullscreen';
+    }
+  }
+  
+  // Toggle fullscreen
+  function toggle() {
+    if (!container) return;
+    
+    if (!isFS) {
+      const element = container;
+      if (element.requestFullscreen) element.requestFullscreen();
+      else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
+      else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
+      else if (element.msRequestFullscreen) element.msRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    }
+  }
+  
+  // Handle fullscreen change
+  function handleChange() {
+    isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || 
+              document.mozFullScreenElement || document.msFullscreenElement);
+    
+    updateIcon();
+    
+    if (container) {
+      container.classList.toggle('storyline-fullscreen', isFS);
+    }
+  }
+  
+  // Initialize
+  function init() {
+    container = document.querySelector('#preso') || document.documentElement;
+    
+    if (!btn) {
+      btn = createBtn();
+      btn.addEventListener('click', toggle);
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+      
+      // Add to appropriate container
+      const target = isMobile ? document.body : 
+                    (document.querySelector('#preso') || document.body);
+      
+      if (!isMobile && target.style.position === 'static') {
+        target.style.position = 'relative';
+      }
+      
+      target.appendChild(btn);
+      updateIcon();
+      console.log(`Fullscreen button added (${isMobile ? 'mobile' : 'desktop'} mode)`);
+    }
+  }
+  
+  // Event listeners
+  ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'msfullscreenchange']
+    .forEach(event => document.addEventListener(event, handleChange));
+  
+  // F11 shortcut (desktop only)
+  if (!isMobile) {
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  }
+  
+  // Start when ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
+  } else {
+    setTimeout(init, 300);
+  }
+  
+})();
+</script>
 </head>
 <body style="background: #FFFFFF" class="cs-HTML theme-classic">
   <!-- 360 -->
