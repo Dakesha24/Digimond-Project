@@ -864,6 +864,49 @@
     margin: 0;
     font-size: 0.9rem;
 }
+/* Membuat tabel bisa di-scroll horizontal di layar kecil */
+.admin-table {
+display: block;
+width: 100%;
+overflow-x: auto; /* Kunci utama untuk tabel responsif */
+}
+
+/* Terapkan aturan ini untuk layar dengan lebar maksimal 768px (tablet/HP) */
+@media (max-width: 768px) {
+/* Sembunyikan sidebar dan topbar agar tidak mengganggu */
+.admin-sidebar,
+.admin-topbar .admin-user-info {
+display: none;
+}
+/* Ubah judul agar di tengah dan beri ruang */
+.admin-topbar {
+justify-content: center;
+padding: 1rem;
+}
+
+/* Atur ulang konten utama agar mengisi seluruh layar */
+.admin-main {
+margin-left: 0;
+ width: 100%;
+ }
+
+/* Beri sedikit padding pada konten agar tidak menempel di tepi layar */
+.admin-content {
+padding: 1rem;
+}
+
+/* Pastikan kolom statistik mengisi lebar penuh */
+.stats-card {
+margin-bottom: 1rem;
+}
+
+/* Atur ulang tombol agar tidak terlalu besar di HP */
+.card-header-custom {
+flex-direction: column;
+align-items: flex-start;
+gap: 0.5rem;
+}
+}
 
 /* Utilities */
 .text-admin-primary { color: var(--admin-primary); }
@@ -880,3 +923,4 @@
 
 .shadow-admin { box-shadow: var(--admin-shadow); }
 .shadow-admin-lg { box-shadow: var(--admin-shadow-lg); }
+
