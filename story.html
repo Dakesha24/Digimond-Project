@@ -1,586 +1,969 @@
 <!DOCTYPE html>
 <html lang="en-US">
-<head>
+  <head>
+    <div></div>
     <meta charset="utf-8" />
     <title>Digimod-Vektars</title>
     <meta http-equiv="x-ua-compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no,minimal-ui" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no,minimal-ui"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    <!-- External Dependencies -->
+    <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="html5/data/js/supabase-config.js"></script>
 
-    <!-- Core Styles -->
+    <!-- Auth Guard -->
+    <script>
+      (function () {
+        "use strict";
+
+        function shouldRequireAuth() {
+          const hash = window.location.hash;
+          const skipPages = ["#63itxUiYU5C", "#5rgG71N9RMX", "#/", ""];
+          return (
+            !skipPages.includes(hash) &&
+            !window.location.pathname.includes("auth.html")
+          );
+        }
+
+        function checkAuth() {
+          if (!shouldRequireAuth()) return true;
+
+          const currentUser = sessionStorage.getItem("currentUser");
+          if (!currentUser) {
+            window.location.href = "auth.html";
+            return false;
+          }
+          return true;
+        }
+
+        function setUserDataInStoryline() {
+          try {
+            const userData = sessionStorage.getItem("currentUser");
+            if (!userData) return;
+
+            const user = JSON.parse(userData);
+            const player = GetPlayer();
+
+            if (player) {
+              player.SetVar("Namalengkap", user.nama_lengkap || "");
+              player.SetVar("Username", user.username || "");
+              player.SetVar("Kelas", user.kelas || "");
+              player.SetVar("AsalSekolah", user.asal_sekolah || "");
+              player.SetVar("Email", user.email || "");
+              player.SetVar("UserID", user.id || "");
+            }
+          } catch (error) {
+            console.error("Error setting user data:", error);
+          }
+        }
+
+        // Intercept login slide
+        function interceptLoginSlide() {
+          const hash = window.location.hash;
+          if (hash.includes("5orjAoE8cPl")) {
+            const currentUser = sessionStorage.getItem("currentUser");
+            if (currentUser) {
+              window.location.hash = "/next-slide";
+            } else {
+              window.location.href = "auth.html";
+            }
+          }
+        }
+
+        function init() {
+          if (!checkAuth()) return;
+
+          window.addEventListener("hashchange", function () {
+            checkAuth();
+            interceptLoginSlide();
+          });
+
+          if (typeof GetPlayer === "function") {
+            setUserDataInStoryline();
+          } else {
+            window.addEventListener("load", () =>
+              setTimeout(setUserDataInStoryline, 1000)
+            );
+          }
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+
+    <!-- Logout System -->
+    <script>
+      (function () {
+        "use strict";
+
+        const isMobile = window.innerWidth <= 768;
+        let logoutBtn = null;
+
+        function createLogoutButton() {
+          const button = document.createElement("button");
+          button.className = "logout-btn";
+          button.setAttribute("aria-label", "Logout dari sistem");
+          button.setAttribute("title", "Logout dari sistem");
+          button.innerHTML = `
+            <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+          button.addEventListener("click", performLogout);
+          return button;
+        }
+
+        function performLogout() {
+          if (!confirm("Yakin ingin keluar dari sistem?")) return;
+
+          const user = JSON.parse(
+            sessionStorage.getItem("currentUser") || "{}"
+          );
+          if (user.id && window.AuthService) {
+            window.AuthService.logActivity(
+              user.id,
+              "logout",
+              "User logged out"
+            );
+          }
+
+          sessionStorage.clear();
+          window.location.href = "story.html";
+        }
+
+        function shouldShowLogoutButton() {
+          const isLoggedIn = sessionStorage.getItem("currentUser");
+          const hash = window.location.hash;
+          const isIntroSlide =
+            hash.includes("63itxUiYU5C") || hash.includes("5rgG71N9RMX");
+          const isAuthPage = window.location.pathname.includes("auth.html");
+
+          return isLoggedIn && !isIntroSlide && !isAuthPage;
+        }
+
+        function initLogoutButton() {
+          // Remove existing button
+          if (logoutBtn) {
+            logoutBtn.remove();
+            logoutBtn = null;
+          }
+
+          // Check if should show
+          if (!shouldShowLogoutButton()) return;
+
+          // Create button
+          logoutBtn = createLogoutButton();
+
+          const target = isMobile
+            ? document.body
+            : document.querySelector("#preso") || document.body;
+
+          // Ensure container positioning like fullscreen button
+          if (!isMobile && target.style.position === "static") {
+            target.style.position = "relative";
+          }
+
+          target.appendChild(logoutBtn);
+
+          // Force visibility if in fullscreen
+          setTimeout(() => {
+            if (
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement
+            ) {
+              forceLogoutButtonVisibility();
+            }
+          }, 100);
+
+          console.log(
+            `Logout button added to ${
+              target === document.body ? "body" : "#preso"
+            } (${isMobile ? "mobile" : "desktop"} mode)`
+          );
+        }
+
+        function forceLogoutButtonVisibility() {
+          const logoutBtn = document.querySelector(".logout-btn");
+          if (logoutBtn) {
+            logoutBtn.style.position = "fixed";
+            logoutBtn.style.zIndex = "99999";
+            logoutBtn.style.display = "flex";
+            logoutBtn.style.visibility = "visible";
+            logoutBtn.style.opacity = "1";
+            logoutBtn.style.pointerEvents = "auto";
+
+            if (isMobile) {
+              logoutBtn.style.top = "70px";
+              logoutBtn.style.right = "15px";
+            } else {
+              logoutBtn.style.top = "56px";
+              logoutBtn.style.right = "10px";
+            }
+          }
+        }
+
+        function init() {
+          initLogoutButton();
+
+          // Monitor changes like fullscreen button does
+          window.addEventListener("hashchange", () => {
+            setTimeout(initLogoutButton, 100);
+          });
+
+          // Periodic check
+          setInterval(initLogoutButton, 3000);
+
+          // Monitor for fullscreen changes to force button visibility
+          [
+            "fullscreenchange",
+            "webkitfullscreenchange",
+            "mozfullscreenchange",
+            "msfullscreenchange",
+          ].forEach((event) => {
+            document.addEventListener(event, () => {
+              setTimeout(forceLogoutButtonVisibility, 100);
+            });
+          });
+        }
+
+        // Initialize same timing as fullscreen button
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(init, 300)
+          );
+        } else {
+          setTimeout(init, 300);
+        }
+
+        // Export
+        window.performLogout = performLogout;
+        window.forceLogoutButtonVisibility = forceLogoutButtonVisibility;
+      })();
+
+      // Global functions
+      function logoutUser() {
+        if (window.performLogout) window.performLogout();
+      }
+
+      function getUserDisplayName() {
+        const user = sessionStorage.getItem("currentUser");
+        return user ? JSON.parse(user).nama_lengkap || "User" : "Guest";
+      }
+    </script>
+
     <style>
-        /* Reset & Base */
-        html, body {
-            height: 100%;
-            padding: 0;
-            margin: 0;
-            background: #ffffff;
+      html,
+      body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+
+      #app {
+        height: 100%;
+        width: 100%;
+      }
+
+      /* Fullscreen Button */
+      .storyline-fs-btn {
+        background: rgba(44, 62, 80, 0.9);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        outline: none;
+      }
+
+      .storyline-fs-btn:hover {
+        background: rgba(52, 73, 94, 0.95);
+        transform: scale(1.05);
+      }
+
+      .storyline-fs-icon {
+        fill: currentColor;
+        pointer-events: none;
+      }
+
+      @media (min-width: 769px) {
+        .storyline-fs-btn {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 1000;
+          width: 36px;
+          height: 36px;
+          padding: 8px;
         }
 
-        #app { height: 100%; width: 100%; }
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+        .storyline-fs-icon {
+          width: 16px;
+          height: 16px;
+        }
+      }
 
-        /* Button Base Styles */
-        .control-btn {
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            outline: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      @media (max-width: 768px) {
+        .storyline-fs-btn {
+          position: fixed !important;
+          top: 15px;
+          right: 15px;
+          z-index: 99999 !important;
+          width: 44px;
+          height: 44px;
+          padding: 10px;
         }
 
-        .control-btn:hover { transform: scale(1.05); }
-        .control-btn svg { fill: currentColor; pointer-events: none; }
-
-        /* Fullscreen Button */
-        .fullscreen-btn {
-            background: rgba(44, 62, 80, 0.9);
-            color: white;
+        .storyline-fs-icon {
+          width: 20px;
+          height: 20px;
         }
+      }
 
-        .fullscreen-btn:hover { background: rgba(52, 73, 94, 0.95); }
+      .storyline-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9998 !important;
+        background: #000;
+      }
 
-        /* Logout Button */
+      /* FULLSCREEN MODE: Ensure buttons stay visible */
+      .storyline-fullscreen .storyline-fs-btn,
+      .storyline-fullscreen .logout-btn {
+        z-index: 99999 !important;
+        position: fixed !important;
+      }
+
+      /* Clean Logout Button */
+      /* Fixed Logout Button - Follow Fullscreen Pattern */
+      .logout-btn {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        outline: none;
+      }
+
+      .logout-btn:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      }
+
+      .logout-btn .logout-icon {
+        fill: currentColor;
+        pointer-events: none;
+      }
+
+      /* Desktop: inside frame - same as fullscreen button */
+      @media (min-width: 769px) {
         .logout-btn {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+          position: absolute;
+          top: 56px;
+          /* 10px (fullscreen top) + 36px (fullscreen height) + 10px (gap) */
+          right: 10px;
+          /* Same as fullscreen button */
+          z-index: 1001;
+          /* Slightly higher than fullscreen (1000) */
+          width: 36px;
+          height: 36px;
+          padding: 8px;
         }
 
-        .logout-btn:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        .logout-btn .logout-icon {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      /* Mobile: fixed position - same as fullscreen button */
+      @media (max-width: 768px) {
+        .logout-btn {
+          position: fixed !important;
+          top: 70px;
+          /* 15px (fullscreen top) + 44px (fullscreen height) + 11px (gap) */
+          right: 15px;
+          /* Same as fullscreen button */
+          z-index: 99999 !important;
+          /* Same as fullscreen button - INCREASED */
+          width: 44px;
+          height: 44px;
+          padding: 10px;
         }
 
-        /* Responsive Positioning */
-        @media (min-width: 769px) {
-            .control-btn {
-                position: absolute;
-                right: 10px;
-                z-index: 1000;
-                width: 36px;
-                height: 36px;
-                padding: 8px;
-            }
-            
-            .control-btn svg { width: 16px; height: 16px; }
-            .fullscreen-btn { top: 10px; }
-            .logout-btn { top: 56px; z-index: 1001; }
+        .logout-btn .logout-icon {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      /* FULLSCREEN MODE: Force visibility for mobile */
+      @media (max-width: 768px) {
+        .storyline-fullscreen .storyline-fs-btn {
+          position: fixed !important;
+          top: 15px !important;
+          right: 15px !important;
+          z-index: 99999 !important;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
 
-        @media (max-width: 768px) {
-            .control-btn {
-                position: fixed !important;
-                right: 15px;
-                z-index: 99999 !important;
-                width: 44px;
-                height: 44px;
-                padding: 10px;
-            }
-            
-            .control-btn svg { width: 20px; height: 20px; }
-            .fullscreen-btn { top: 15px; }
-            .logout-btn { top: 70px; }
+        .storyline-fullscreen .logout-btn {
+          position: fixed !important;
+          top: 70px !important;
+          right: 15px !important;
+          z-index: 99999 !important;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
+      }
 
-        /* Fullscreen Mode */
-        .storyline-fullscreen {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 9998 !important;
-            background: #000;
-        }
+      /* Tooltip */
+      .logout-btn::after {
+        content: "Logout";
+        position: absolute;
+        right: 45px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 100000;
+      }
 
-        .storyline-fullscreen .control-btn {
-            position: fixed !important;
-            z-index: 99999 !important;
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
-        }
+      .logout-btn:hover::after {
+        opacity: 1;
+        visibility: visible;
+      }
 
-        /* Tooltip */
-        .logout-btn::after {
-            content: "Logout";
-            position: absolute;
-            right: 45px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            pointer-events: none;
-            z-index: 100000;
-        }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
 
-        .logout-btn:hover::after { opacity: 1; visibility: visible; }
+      /* Additional safety rules to prevent any hiding */
+      .storyline-fs-btn,
+      .logout-btn {
+        display: flex !important;
+        visibility: visible !important;
+      }
+
+      /* Ensure buttons stay on top of any Storyline elements */
+      body .storyline-fs-btn,
+      body .logout-btn {
+        z-index: 99999 !important;
+      }
+
+      /* Override any Storyline default controls in fullscreen */
+      .storyline-fullscreen .storyline-player-controls,
+      .storyline-fullscreen .storyline-settings-button,
+      .storyline-fullscreen [role="button"][aria-label*="Settings"],
+      .storyline-fullscreen [role="button"][aria-label*="Menu"],
+      .storyline-fullscreen .cs-button:not(.storyline-fs-btn):not(.logout-btn),
+      .storyline-fullscreen .storyline-menu-button {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /* Force our custom buttons to always be visible */
+      .storyline-fs-btn,
+      .logout-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* Specific overrides for fullscreen mode */
+      .storyline-fullscreen .storyline-fs-btn,
+      .storyline-fullscreen .logout-btn {
+        position: fixed !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* Ensure our buttons win over any inline styles */
+      [class*="storyline-fs-btn"],
+      [class*="logout-btn"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
     </style>
 
-    <!-- Core Scripts -->
     <script>
-        // Global Configuration
-        window.THREE = {};
-        window.DIGIMOD_CONFIG = {
-            isMobile: window.innerWidth <= 768,
-            skipAuthPages: ["#63itxUiYU5C", "#5rgG71N9RMX", "#/", ""],
-            loginSlideHash: "5orjAoE8cPl"
-        };
+      window.THREE = {};
     </script>
 
-    <!-- Authentication System -->
+    <!-- Fullscreen Script -->
     <script>
-        class AuthSystem {
-            constructor() {
-                this.init();
-            }
+      (function () {
+        "use strict";
 
-            shouldRequireAuth() {
-                const hash = window.location.hash;
-                return !window.DIGIMOD_CONFIG.skipAuthPages.includes(hash) && 
-                       !window.location.pathname.includes("auth.html");
-            }
+        const isMobile = window.innerWidth <= 768;
+        let btn,
+          isFS = false,
+          container;
 
-            checkAuth() {
-                if (!this.shouldRequireAuth()) return true;
-                
-                if (!sessionStorage.getItem("currentUser")) {
-                    window.location.href = "auth.html";
-                    return false;
-                }
-                return true;
-            }
-
-            setUserDataInStoryline() {
-                try {
-                    const userData = sessionStorage.getItem("currentUser");
-                    if (!userData) return;
-
-                    const user = JSON.parse(userData);
-                    const player = window.GetPlayer?.();
-
-                    if (player) {
-                        const userVars = {
-                            Namalengkap: user.nama_lengkap || "",
-                            Username: user.username || "",
-                            Kelas: user.kelas || "",
-                            AsalSekolah: user.asal_sekolah || "",
-                            Email: user.email || "",
-                            UserID: user.id || ""
-                        };
-
-                        Object.entries(userVars).forEach(([key, value]) => {
-                            player.SetVar(key, value);
-                        });
-                    }
-                } catch (error) {
-                    console.error("Error setting user data:", error);
-                }
-            }
-
-            interceptLoginSlide() {
-                const hash = window.location.hash;
-                if (hash.includes(window.DIGIMOD_CONFIG.loginSlideHash)) {
-                    const currentUser = sessionStorage.getItem("currentUser");
-                    if (currentUser) {
-                        window.location.hash = "/next-slide";
-                    } else {
-                        window.location.href = "auth.html";
-                    }
-                }
-            }
-
-            init() {
-                if (!this.checkAuth()) return;
-
-                window.addEventListener("hashchange", () => {
-                    this.checkAuth();
-                    this.interceptLoginSlide();
-                });
-
-                const setUserData = () => this.setUserDataInStoryline();
-                
-                if (typeof GetPlayer === "function") {
-                    setUserData();
-                } else {
-                    window.addEventListener("load", () => setTimeout(setUserData, 1000));
-                }
-            }
+        function createBtn() {
+          const button = document.createElement("button");
+          button.className = "storyline-fs-btn";
+          button.setAttribute("aria-label", "Toggle fullscreen");
+          button.setAttribute("title", "Toggle Fullscreen");
+          button.innerHTML = `
+        <svg class="storyline-fs-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+        </svg>
+        <span class="sr-only">Toggle fullscreen</span>
+      `;
+          return button;
         }
 
-        // Initialize when DOM is ready
+        function updateIcon() {
+          if (!btn) return;
+          const path = btn.querySelector("path");
+          const srText = btn.querySelector(".sr-only");
+
+          if (isFS) {
+            path.setAttribute(
+              "d",
+              "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
+            );
+            btn.setAttribute("aria-label", "Exit fullscreen");
+            srText.textContent = "Exit fullscreen";
+          } else {
+            path.setAttribute(
+              "d",
+              "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+            );
+            btn.setAttribute("aria-label", "Enter fullscreen");
+            srText.textContent = "Enter fullscreen";
+          }
+        }
+
+        function toggle() {
+          if (!container) return;
+
+          if (!isFS) {
+            const element = container;
+            if (element.requestFullscreen) element.requestFullscreen();
+            else if (element.webkitRequestFullscreen)
+              element.webkitRequestFullscreen();
+            else if (element.mozRequestFullScreen)
+              element.mozRequestFullScreen();
+            else if (element.msRequestFullscreen) element.msRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen)
+              document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen)
+              document.mozCancelFullScreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+          }
+        }
+
+        function handleChange() {
+          isFS = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+
+          updateIcon();
+
+          if (container) {
+            container.classList.toggle("storyline-fullscreen", isFS);
+          }
+
+          // Force both buttons to stay visible in fullscreen
+          setTimeout(() => {
+            forceButtonVisibility();
+          }, 100);
+        }
+
+        function forceButtonVisibility() {
+          // Force fullscreen button visibility
+          if (btn) {
+            btn.style.position = "fixed";
+            btn.style.zIndex = "99999";
+            btn.style.display = "flex";
+            btn.style.visibility = "visible";
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+
+            if (isMobile) {
+              btn.style.top = "15px";
+              btn.style.right = "15px";
+            } else {
+              btn.style.top = "10px";
+              btn.style.right = "10px";
+            }
+          }
+
+          // Force logout button visibility using global function
+          if (window.forceLogoutButtonVisibility) {
+            window.forceLogoutButtonVisibility();
+          }
+
+          // Hide any conflicting Storyline UI elements
+          hideStorylineControls();
+        }
+
+        function hideStorylineControls() {
+          // Hide default Storyline fullscreen controls that might conflict
+          const selectors = [
+            ".storyline-player-controls",
+            ".storyline-settings-button",
+            '[role="button"][aria-label*="Settings"]',
+            '[role="button"][aria-label*="Menu"]',
+            ".cs-button",
+            ".storyline-menu-button",
+          ];
+
+          selectors.forEach((selector) => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach((el) => {
+              if (
+                el &&
+                !el.classList.contains("storyline-fs-btn") &&
+                !el.classList.contains("logout-btn")
+              ) {
+                el.style.display = "none";
+                el.style.visibility = "hidden";
+                el.style.opacity = "0";
+                el.style.pointerEvents = "none";
+              }
+            });
+          });
+        }
+
+        function init() {
+          container =
+            document.querySelector("#preso") || document.documentElement;
+
+          if (!btn) {
+            btn = createBtn();
+            btn.addEventListener("click", toggle);
+
+            const target = isMobile
+              ? document.body
+              : document.querySelector("#preso") || document.body;
+
+            if (!isMobile && target.style.position === "static") {
+              target.style.position = "relative";
+            }
+
+            target.appendChild(btn);
+            updateIcon();
+          }
+
+          // Monitor for changes that might hide our buttons
+          const observer = new MutationObserver(() => {
+            if (isFS) {
+              setTimeout(forceButtonVisibility, 50);
+            }
+          });
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style", "class"],
+          });
+
+          // Periodic check to ensure buttons stay visible in fullscreen
+          setInterval(() => {
+            if (isFS) {
+              forceButtonVisibility();
+            }
+          }, 1000);
+        }
+
+        [
+          "fullscreenchange",
+          "webkitfullscreenchange",
+          "mozfullscreenchange",
+          "msfullscreenchange",
+        ].forEach((event) => document.addEventListener(event, handleChange));
+
+        if (!isMobile) {
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "F11") {
+              e.preventDefault();
+              toggle();
+            }
+          });
+        }
+
         if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", () => new AuthSystem());
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(init, 300)
+          );
         } else {
-            new AuthSystem();
+          setTimeout(init, 300);
         }
+      })();
     </script>
+  </head>
 
-    <!-- UI Control System -->
+  <body style="background: #ffffff" class="cs-HTML theme-classic">
     <script>
-        class UIControlSystem {
-            constructor() {
-                this.fullscreenBtn = null;
-                this.logoutBtn = null;
-                this.isFullscreen = false;
-                this.container = null;
-                this.init();
-            }
-
-            createButton(type, clickHandler) {
-                const button = document.createElement("button");
-                button.className = `control-btn ${type}-btn`;
-                
-                const configs = {
-                    fullscreen: {
-                        label: "Toggle fullscreen",
-                        icon: `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`,
-                        srText: "Toggle fullscreen"
-                    },
-                    logout: {
-                        label: "Logout dari sistem",
-                        icon: `<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
-                        srText: "Logout"
-                    }
-                };
-
-                const config = configs[type];
-                button.setAttribute("aria-label", config.label);
-                button.setAttribute("title", config.label);
-                button.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        ${config.icon}
-                    </svg>
-                    <span class="sr-only">${config.srText}</span>
-                `;
-                
-                button.addEventListener("click", clickHandler);
-                return button;
-            }
-
-            shouldShowLogout() {
-                const isLoggedIn = sessionStorage.getItem("currentUser");
-                const hash = window.location.hash;
-                const isIntroSlide = window.DIGIMOD_CONFIG.skipAuthPages.some(page => hash.includes(page));
-                const isAuthPage = window.location.pathname.includes("auth.html");
-                
-                return isLoggedIn && !isIntroSlide && !isAuthPage;
-            }
-
-            updateFullscreenIcon() {
-                if (!this.fullscreenBtn) return;
-                
-                const path = this.fullscreenBtn.querySelector("path");
-                const srText = this.fullscreenBtn.querySelector(".sr-only");
-
-                if (this.isFullscreen) {
-                    path.setAttribute("d", "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z");
-                    this.fullscreenBtn.setAttribute("aria-label", "Exit fullscreen");
-                    srText.textContent = "Exit fullscreen";
-                } else {
-                    path.setAttribute("d", "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z");
-                    this.fullscreenBtn.setAttribute("aria-label", "Enter fullscreen");
-                    srText.textContent = "Enter fullscreen";
-                }
-            }
-
-            toggleFullscreen() {
-                if (!this.container) return;
-
-                if (!this.isFullscreen) {
-                    const methods = ['requestFullscreen', 'webkitRequestFullscreen', 'mozRequestFullScreen', 'msRequestFullscreen'];
-                    const method = methods.find(m => this.container[m]);
-                    if (method) this.container[method]();
-                } else {
-                    const methods = ['exitFullscreen', 'webkitExitFullscreen', 'mozCancelFullScreen', 'msExitFullscreen'];
-                    const method = methods.find(m => document[m]);
-                    if (method) document[method]();
-                }
-            }
-
-            performLogout() {
-                if (!confirm("Yakin ingin keluar dari sistem?")) return;
-
-                try {
-                    const user = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
-                    if (user.id && window.AuthService) {
-                        window.AuthService.logActivity(user.id, "logout", "User logged out");
-                    }
-                } catch (error) {
-                    console.error("Error logging logout activity:", error);
-                }
-
-                sessionStorage.clear();
-                window.location.href = "story.html";
-            }
-
-            handleFullscreenChange() {
-                this.isFullscreen = !!(
-                    document.fullscreenElement ||
-                    document.webkitFullscreenElement ||
-                    document.mozFullScreenElement ||
-                    document.msFullscreenElement
-                );
-
-                this.updateFullscreenIcon();
-                
-                if (this.container) {
-                    this.container.classList.toggle("storyline-fullscreen", this.isFullscreen);
-                }
-
-                setTimeout(() => this.forceButtonVisibility(), 100);
-            }
-
-            forceButtonVisibility() {
-                [this.fullscreenBtn, this.logoutBtn].forEach(btn => {
-                    if (!btn) return;
-                    
-                    Object.assign(btn.style, {
-                        position: "fixed",
-                        zIndex: "99999",
-                        display: "flex",
-                        visibility: "visible",
-                        opacity: "1",
-                        pointerEvents: "auto"
-                    });
-                });
-
-                if (window.DIGIMOD_CONFIG.isMobile) {
-                    if (this.fullscreenBtn) {
-                        Object.assign(this.fullscreenBtn.style, { top: "15px", right: "15px" });
-                    }
-                    if (this.logoutBtn) {
-                        Object.assign(this.logoutBtn.style, { top: "70px", right: "15px" });
-                    }
-                } else {
-                    if (this.fullscreenBtn) {
-                        Object.assign(this.fullscreenBtn.style, { top: "10px", right: "10px" });
-                    }
-                    if (this.logoutBtn) {
-                        Object.assign(this.logoutBtn.style, { top: "56px", right: "10px" });
-                    }
-                }
-            }
-
-            initButtons() {
-                this.container = document.querySelector("#preso") || document.documentElement;
-
-                // Create fullscreen button
-                if (!this.fullscreenBtn) {
-                    this.fullscreenBtn = this.createButton("fullscreen", () => this.toggleFullscreen());
-                    this.updateFullscreenIcon();
-                }
-
-                // Create/update logout button
-                if (this.logoutBtn) {
-                    this.logoutBtn.remove();
-                    this.logoutBtn = null;
-                }
-
-                if (this.shouldShowLogout()) {
-                    this.logoutBtn = this.createButton("logout", () => this.performLogout());
-                }
-
-                // Append buttons
-                const target = window.DIGIMOD_CONFIG.isMobile ? document.body : (this.container || document.body);
-                
-                if (!window.DIGIMOD_CONFIG.isMobile && target.style.position === "static") {
-                    target.style.position = "relative";
-                }
-
-                target.appendChild(this.fullscreenBtn);
-                if (this.logoutBtn) {
-                    target.appendChild(this.logoutBtn);
-                }
-
-                setTimeout(() => {
-                    if (this.isFullscreen) this.forceButtonVisibility();
-                }, 100);
-            }
-
-            init() {
-                // Initialize buttons
-                this.initButtons();
-
-                // Monitor changes
-                window.addEventListener("hashchange", () => setTimeout(() => this.initButtons(), 100));
-                setInterval(() => this.initButtons(), 3000);
-
-                // Fullscreen event listeners
-                ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "msfullscreenchange"]
-                    .forEach(event => document.addEventListener(event, () => this.handleFullscreenChange()));
-
-                // Keyboard shortcut
-                if (!window.DIGIMOD_CONFIG.isMobile) {
-                    document.addEventListener("keydown", (e) => {
-                        if (e.key === "F11") {
-                            e.preventDefault();
-                            this.toggleFullscreen();
-                        }
-                    });
-                }
-
-                // Periodic check for fullscreen
-                setInterval(() => {
-                    if (this.isFullscreen) this.forceButtonVisibility();
-                }, 1000);
-            }
-        }
-
-        // Global functions for backward compatibility
-        window.logoutUser = () => {
-            const ui = new UIControlSystem();
-            ui.performLogout();
-        };
-
-        window.getUserDisplayName = () => {
-            const user = sessionStorage.getItem("currentUser");
-            return user ? JSON.parse(user).nama_lengkap || "User" : "Guest";
-        };
-
-        // Initialize UI controls
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", () => setTimeout(() => new UIControlSystem(), 300));
-        } else {
-            setTimeout(() => new UIControlSystem(), 300);
-        }
+      !(function (e) {
+        var i = /iPhone/i,
+          o = /iPod/i,
+          n = /iPad/i,
+          t = /(?=.*\bAndroid\b)(?=.*\bMobile\b)/i,
+          d = /Android/i,
+          s = /(?=.*\bAndroid\b)(?=.*\bSD4930UR\b)/i,
+          b =
+            /(?=.*\bAndroid\b)(?=.*\b(?:KFOT|KFTT|KFJWI|KFJWA|KFSOWI|KFTHWI|KFTHWA|KFAPWI|KFAPWA|KFARWI|KFASWI|KFSAWI|KFSAWA)\b)/i,
+          r = /IEMobile/i,
+          h = /(?=.*\bWindows\b)(?=.*\bARM\b)/i,
+          a = /BlackBerry/i,
+          l = /BB10/i,
+          p = /Opera Mini/i,
+          f = /(CriOS|Chrome)(?=.*\bMobile\b)/i,
+          u = /(?=.*\bFirefox\b)(?=.*\bMobile\b)/i,
+          c = new RegExp("(?:Nexus 7|BNTV250|Kindle Fire|Silk|GT-P1000)", "i"),
+          w = function (e, i) {
+            return e.test(i);
+          },
+          A = function (e) {
+            var A = e || navigator.userAgent,
+              v = A.split("[FBAN");
+            if (
+              (void 0 !== v[1] && (A = v[0]),
+              (this.apple = {
+                phone: w(i, A),
+                ipod: w(o, A),
+                tablet: !w(i, A) && w(n, A),
+                device: w(i, A) || w(o, A) || w(n, A),
+              }),
+              (this.amazon = {
+                phone: w(s, A),
+                tablet: !w(s, A) && w(b, A),
+                device: w(s, A) || w(b, A),
+              }),
+              (this.android = {
+                phone: w(s, A) || w(t, A),
+                tablet: !w(s, A) && !w(t, A) && (w(b, A) || w(d, A)),
+                device: w(s, A) || w(b, A) || w(t, A) || w(d, A),
+              }),
+              (this.windows = {
+                phone: w(r, A),
+                tablet: w(h, A),
+                device: w(r, A) || w(h, A),
+              }),
+              (this.other = {
+                blackberry: w(a, A),
+                blackberry10: w(l, A),
+                opera: w(p, A),
+                firefox: w(u, A),
+                chrome: w(f, A),
+                device: w(a, A) || w(l, A) || w(p, A) || w(u, A) || w(f, A),
+              }),
+              (this.seven_inch = w(c, A)),
+              (this.any =
+                this.apple.device ||
+                this.android.device ||
+                this.windows.device ||
+                this.other.device ||
+                this.seven_inch),
+              (this.phone =
+                this.apple.phone || this.android.phone || this.windows.phone),
+              (this.tablet =
+                this.apple.tablet ||
+                this.android.tablet ||
+                this.windows.tablet),
+              "undefined" == typeof window)
+            )
+              return this;
+          },
+          v = function () {
+            var e = new A();
+            return (e.Class = A), e;
+          };
+        "undefined" != typeof module &&
+        module.exports &&
+        "undefined" == typeof window
+          ? (module.exports = A)
+          : "undefined" != typeof module &&
+            module.exports &&
+            "undefined" != typeof window
+          ? (module.exports = v())
+          : "function" == typeof define && define.amd
+          ? define("isMobile", [], (e.isMobile = v()))
+          : (e.isMobile = v());
+      })(this);
+      window.isMobile.apple.tablet =
+        window.isMobile.apple.tablet ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      window.isMobile.apple.device =
+        window.isMobile.apple.device || window.isMobile.apple.tablet;
+      window.isMobile.tablet =
+        window.isMobile.tablet || window.isMobile.apple.tablet;
+      window.isMobile.any = window.isMobile.any || window.isMobile.apple.tablet;
     </script>
 
-    <!-- Mobile Detection Script -->
-    <script>
-        !function(e){var i=/iPhone/i,o=/iPod/i,n=/iPad/i,t=/(?=.*\bAndroid\b)(?=.*\bMobile\b)/i,d=/Android/i,s=/(?=.*\bAndroid\b)(?=.*\bSD4930UR\b)/i,b=/(?=.*\bAndroid\b)(?=.*\b(?:KFOT|KFTT|KFJWI|KFJWA|KFSOWI|KFTHWI|KFTHWA|KFAPWI|KFAPWA|KFARWI|KFASWI|KFSAWI|KFSAWA)\b)/i,r=/IEMobile/i,h=/(?=.*\bWindows\b)(?=.*\bARM\b)/i,a=/BlackBerry/i,l=/BB10/i,p=/Opera Mini/i,f=/(CriOS|Chrome)(?=.*\bMobile\b)/i,u=/(?=.*\bFirefox\b)(?=.*\bMobile\b)/i,c=new RegExp("(?:Nexus 7|BNTV250|Kindle Fire|Silk|GT-P1000)","i"),w=function(e,i){return e.test(i)},A=function(e){var A=e||navigator.userAgent,v=A.split("[FBAN");if(void 0!==v[1]&&(A=v[0]),this.apple={phone:w(i,A),ipod:w(o,A),tablet:!w(i,A)&&w(n,A),device:w(i,A)||w(o,A)||w(n,A)},this.amazon={phone:w(s,A),tablet:!w(s,A)&&w(b,A),device:w(s,A)||w(b,A)},this.android={phone:w(s,A)||w(t,A),tablet:!w(s,A)&&!w(t,A)&&(w(b,A)||w(d,A)),device:w(s,A)||w(b,A)||w(t,A)||w(d,A)},this.windows={phone:w(r,A),tablet:w(h,A),device:w(r,A)||w(h,A)},this.other={blackberry:w(a,A),blackberry10:w(l,A),opera:w(p,A),firefox:w(u,A),chrome:w(f,A),device:w(a,A)||w(l,A)||w(p,A)||w(u,A)||w(f,A)},this.seven_inch=w(c,A),this.any=this.apple.device||this.android.device||this.windows.device||this.other.device||this.seven_inch,this.phone=this.apple.phone||this.android.phone||this.windows.phone,this.tablet=this.apple.tablet||this.android.tablet||this.windows.tablet,"undefined"==typeof window)return this},v=function(){var e=new A;return e.Class=A,e};"undefined"!=typeof module&&module.exports&&"undefined"==typeof window?module.exports=A:"undefined"!=typeof module&&module.exports&&"undefined"!=typeof window?module.exports=v():"function"==typeof define&&define.amd?define("isMobile",[],e.isMobile=v()):e.isMobile=v()}(this);
-        window.isMobile.apple.tablet=window.isMobile.apple.tablet||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-        window.isMobile.apple.device=window.isMobile.apple.device||window.isMobile.apple.tablet;
-        window.isMobile.tablet=window.isMobile.tablet||window.isMobile.apple.tablet;
-        window.isMobile.any=window.isMobile.any||window.isMobile.apple.tablet;
-    </script>
-</head>
-
-<body class="cs-HTML theme-classic">
     <div id="focus-sink" tabindex="-1"></div>
     <div id="preso"></div>
 
-    <!-- Storyline Configuration -->
     <script>
-        window.DS = {};
-        window.globals = {
-            DATA_PATH_BASE: "",
-            HAS_FRAME: true,
-            HAS_SLIDE: true,
-            lmsPresent: false,
-            tinCanPresent: false,
-            cmi5Present: false,
-            aoSupport: false,
-            scale: "noscale",
-            captureRc: false,
-            browserSize: "optimal",
-            bgColor: "#FFFFFF",
-            features: "",
-            themeName: "classic",
-            preloaderColor: "#FFFFFF",
-            suppressAnalytics: true,
-            productChannel: "enterprise",
-            publishSource: "storyline",
-            aid: "",
-            cid: "67d594d7-92a8-494c-89df-a95b3e0aeeef",
-            playerVersion: "3.17.27621.0",
-            maxIosVideoElements: 10,
+      window.DS = {};
+      window.globals = {
+        DATA_PATH_BASE: "",
+        HAS_FRAME: true,
+        HAS_SLIDE: true,
+        lmsPresent: false,
+        tinCanPresent: false,
+        cmi5Present: false,
+        aoSupport: false,
+        scale: "noscale",
+        captureRc: false,
+        browserSize: "optimal",
+        bgColor: "#FFFFFF",
+        features: "",
+        themeName: "classic",
+        preloaderColor: "#FFFFFF",
+        suppressAnalytics: true,
+        productChannel: "enterprise",
+        publishSource: "storyline",
+        aid: "",
+        cid: "67d594d7-92a8-494c-89df-a95b3e0aeeef",
+        playerVersion: "3.17.27621.0",
+        maxIosVideoElements: 10,
 
-            parseParams: function(qs) {
-                if (window.globals.parsedParams != null) {
-                    return window.globals.parsedParams;
-                }
-                qs = (qs || window.location.search.substr(1)).split("+").join(" ");
-                var params = {}, tokens, re = /[?&]?([^=]+)=([^&]*)/g;
+        parseParams: function (qs) {
+          if (window.globals.parsedParams != null) {
+            return window.globals.parsedParams;
+          }
+          qs = (qs || window.location.search.substr(1)).split("+").join(" ");
+          var params = {},
+            tokens,
+            re = /[?&]?([^=]+)=([^&]*)/g;
 
-                while (tokens = re.exec(qs)) {
-                    params[decodeURIComponent(tokens[1]).trim()] = decodeURIComponent(tokens[2]).trim();
-                }
-                window.globals.parsedParams = params;
-                return params;
+          while ((tokens = re.exec(qs))) {
+            params[decodeURIComponent(tokens[1]).trim()] = decodeURIComponent(
+              tokens[2]
+            ).trim();
+          }
+          window.globals.parsedParams = params;
+          return params;
+        },
+      };
+
+      (function () {
+        var classTypes = ["desktop", "mobile", "phone", "tablet"];
+
+        var addDeviceClasses = function (prefix, testObj) {
+          var curr, i;
+          for (i = 0; i < classTypes.length; i++) {
+            curr = classTypes[i];
+            if (testObj[curr]) {
+              document.body.classList.add(prefix + curr);
             }
+          }
         };
 
-        // Device Detection & Classification
-        (function() {
-            const classTypes = ["desktop", "mobile", "phone", "tablet"];
-            const addDeviceClasses = (prefix, testObj) => {
-                classTypes.forEach(type => {
-                    if (testObj[type]) {
-                        document.body.classList.add(prefix + type);
-                    }
-                });
-            };
+        var params = window.globals.parseParams(),
+          isDevicePreview = params.devicepreview === "1",
+          isPhoneOverride =
+            params.deviceType === "phone" ||
+            (isDevicePreview && params.phone == "1"),
+          isTabletOverride =
+            (params.deviceType === "tablet" || isDevicePreview) &&
+            !isPhoneOverride,
+          isMobileOverride = isPhoneOverride || isTabletOverride;
 
-            const params = window.globals.parseParams();
-            const isDevicePreview = params.devicepreview === "1";
-            const isPhoneOverride = params.deviceType === "phone" || (isDevicePreview && params.phone == "1");
-            const isTabletOverride = (params.deviceType === "tablet" || isDevicePreview) && !isPhoneOverride;
-            const isMobileOverride = isPhoneOverride || isTabletOverride;
+        var deviceView = {
+          desktop: !window.isMobile.any && !isMobileOverride,
+          mobile: window.isMobile.any || isMobileOverride,
+          phone:
+            isPhoneOverride || (window.isMobile.phone && !isTabletOverride),
+          tablet: isTabletOverride || window.isMobile.tablet,
+        };
 
-            const deviceView = {
-                desktop: !window.isMobile.any && !isMobileOverride,
-                mobile: window.isMobile.any || isMobileOverride,
-                phone: isPhoneOverride || (window.isMobile.phone && !isTabletOverride),
-                tablet: isTabletOverride || window.isMobile.tablet
-            };
+        window.globals.deviceView = deviceView;
+        window.isMobile.desktop = !window.isMobile.any;
+        window.isMobile.mobile = window.isMobile.any;
 
-            window.globals.deviceView = deviceView;
-            window.isMobile.desktop = !window.isMobile.any;
-            window.isMobile.mobile = window.isMobile.any;
-
-            addDeviceClasses("view-", deviceView);
-        })();
+        addDeviceClasses("view-", deviceView);
+      })();
     </script>
 
-    <!-- Storyline Assets -->
     <script src="story_content/user.js" type="text/javascript"></script>
-    
-    <!-- Loading Animation -->
     <div class="slide-loader"></div>
     <script>
-        if (window.globals.deviceView.isMobile) {
-            const loader = document.querySelector(".slide-loader");
-            [1, 2, 3].forEach(n => {
-                const dot = document.createElement("div");
-                dot.style.backgroundColor = window.globals.preloaderColor;
-                dot.classList.add("mobile-loader-dot", `dot${n}`);
-                loader.appendChild(dot);
-            });
-        }
+      if (window.globals.deviceView.isMobile) {
+        var doc = document,
+          loader = doc.body.querySelector(".slide-loader");
+        [1, 2, 3].forEach(function (n) {
+          var d = doc.createElement("div");
+          d.style.backgroundColor = window.globals.preloaderColor;
+          d.classList.add("mobile-loader-dot");
+          d.classList.add("dot" + n);
+          loader.appendChild(d);
+        });
+      }
     </script>
 
     <div class="mobile-load-title-overlay" style="display: none">
-        <div class="mobile-load-title">Digimod-Vektars</div>
+      <div class="mobile-load-title">Digimod-Vektars</div>
     </div>
 
     <div class="mobile-chrome-warning"></div>
 
     <script>
-        if (window.autoSpider && window.vInterfaceObject) {
-            document.querySelector(".mobile-load-title-overlay").style.display = "none";
-        }
+      if (window.autoSpider && window.vInterfaceObject) {
+        document.querySelector(".mobile-load-title-overlay").style.display =
+          "none";
+      }
     </script>
 
     <link rel="stylesheet" href="html5/data/css/output.min.css" data-noprefix />
-    <script src="html5/lib/scripts/bootstrapper.min.js"></script>
-</body>
+  </body>
+  <script src="html5/lib/scripts/bootstrapper.min.js"></script>
 </html>
