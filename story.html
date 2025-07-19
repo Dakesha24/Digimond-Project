@@ -159,30 +159,19 @@
           // Check if should show
           if (!shouldShowLogoutButton()) return;
 
-          // Create button
+          // Create button - ALWAYS append to body for fullscreen compatibility
           logoutBtn = createLogoutButton();
+          document.body.appendChild(logoutBtn);
 
-          const target = isMobile
-            ? document.body
-            : document.querySelector("#preso") || document.body;
-
-          // Ensure container positioning like fullscreen button
-          if (!isMobile && target.style.position === "static") {
-            target.style.position = "relative";
-          }
-
-          target.appendChild(logoutBtn);
           console.log(
-            `Logout button added to ${
-              target === document.body ? "body" : "#preso"
-            } (${isMobile ? "mobile" : "desktop"} mode)`
+            "Logout button added to body for fullscreen compatibility"
           );
         }
 
         function init() {
           initLogoutButton();
 
-          // Monitor changes like fullscreen button does
+          // Monitor changes
           window.addEventListener("hashchange", () => {
             setTimeout(initLogoutButton, 100);
           });
@@ -191,7 +180,7 @@
           setInterval(initLogoutButton, 3000);
         }
 
-        // Initialize same timing as fullscreen button
+        // Initialize
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", () =>
             setTimeout(init, 300)
@@ -228,7 +217,7 @@
         width: 100%;
       }
 
-      /* Fullscreen Button */
+      /* Fullscreen Button - FIXED FOR FULLSCREEN MODE */
       .storyline-fs-btn {
         background: rgba(44, 62, 80, 0.9);
         color: white;
@@ -242,6 +231,9 @@
         justify-content: center;
         backdrop-filter: blur(10px);
         outline: none;
+        /* ALWAYS FIXED POSITION FOR FULLSCREEN COMPATIBILITY */
+        position: fixed !important;
+        z-index: 99999 !important; /* Very high z-index */
       }
 
       .storyline-fs-btn:hover {
@@ -254,12 +246,11 @@
         pointer-events: none;
       }
 
+      /* Desktop styles */
       @media (min-width: 769px) {
         .storyline-fs-btn {
-          position: absolute;
           top: 10px;
           right: 10px;
-          z-index: 1000;
           width: 36px;
           height: 36px;
           padding: 8px;
@@ -271,12 +262,11 @@
         }
       }
 
+      /* Mobile styles */
       @media (max-width: 768px) {
         .storyline-fs-btn {
-          position: fixed !important;
           top: 15px;
           right: 15px;
-          z-index: 9999 !important;
           width: 44px;
           height: 44px;
           padding: 10px;
@@ -298,8 +288,7 @@
         background: #000;
       }
 
-      /* Clean Logout Button */
-      /* Fixed Logout Button - Follow Fullscreen Pattern */
+      /* Logout Button - FIXED FOR FULLSCREEN MODE */
       .logout-btn {
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         color: white;
@@ -313,6 +302,9 @@
         justify-content: center;
         backdrop-filter: blur(10px);
         outline: none;
+        /* ALWAYS FIXED POSITION FOR FULLSCREEN COMPATIBILITY */
+        position: fixed !important;
+        z-index: 99998 !important; /* Very high z-index, slightly lower than fullscreen button */
       }
 
       .logout-btn:hover {
@@ -326,16 +318,11 @@
         pointer-events: none;
       }
 
-      /* Desktop: inside frame - same as fullscreen button */
+      /* Desktop positioning */
       @media (min-width: 769px) {
         .logout-btn {
-          position: absolute;
-          top: 56px;
-          /* 10px (fullscreen top) + 36px (fullscreen height) + 10px (gap) */
+          top: 56px; /* Below fullscreen button */
           right: 10px;
-          /* Same as fullscreen button */
-          z-index: 1001;
-          /* Slightly higher than fullscreen (1000) */
           width: 36px;
           height: 36px;
           padding: 8px;
@@ -347,16 +334,11 @@
         }
       }
 
-      /* Mobile: fixed position - same as fullscreen button */
+      /* Mobile positioning */
       @media (max-width: 768px) {
         .logout-btn {
-          position: fixed !important;
-          top: 70px;
-          /* 15px (fullscreen top) + 44px (fullscreen height) + 11px (gap) */
+          top: 70px; /* Below fullscreen button */
           right: 15px;
-          /* Same as fullscreen button */
-          z-index: 9999 !important;
-          /* Same as fullscreen button */
           width: 44px;
           height: 44px;
           padding: 10px;
@@ -384,10 +366,34 @@
         visibility: hidden;
         transition: all 0.3s ease;
         pointer-events: none;
-        z-index: 100000;
+        z-index: 100001;
       }
 
       .logout-btn:hover::after {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* Fullscreen tooltip */
+      .storyline-fs-btn::after {
+        content: "Fullscreen";
+        position: absolute;
+        right: 45px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 100002;
+      }
+
+      .storyline-fs-btn:hover::after {
         opacity: 1;
         visibility: visible;
       }
@@ -407,7 +413,7 @@
       window.THREE = {};
     </script>
 
-    <!-- Fullscreen Script -->
+    <!-- Fullscreen Script - FIXED VERSION -->
     <script>
       (function () {
         "use strict";
@@ -442,14 +448,20 @@
               "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
             );
             btn.setAttribute("aria-label", "Exit fullscreen");
+            btn.setAttribute("title", "Exit Fullscreen");
             srText.textContent = "Exit fullscreen";
+            // Update tooltip
+            btn.style.setProperty("--tooltip-content", '"Exit Fullscreen"');
           } else {
             path.setAttribute(
               "d",
               "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
             );
             btn.setAttribute("aria-label", "Enter fullscreen");
+            btn.setAttribute("title", "Enter Fullscreen");
             srText.textContent = "Enter fullscreen";
+            // Update tooltip
+            btn.style.setProperty("--tooltip-content", '"Enter Fullscreen"');
           }
         }
 
@@ -487,6 +499,12 @@
           if (container) {
             container.classList.toggle("storyline-fullscreen", isFS);
           }
+
+          // Ensure buttons stay visible in fullscreen
+          if (btn) {
+            btn.style.display = "flex";
+            btn.style.visibility = "visible";
+          }
         }
 
         function init() {
@@ -497,16 +515,13 @@
             btn = createBtn();
             btn.addEventListener("click", toggle);
 
-            const target = isMobile
-              ? document.body
-              : document.querySelector("#preso") || document.body;
-
-            if (!isMobile && target.style.position === "static") {
-              target.style.position = "relative";
-            }
-
-            target.appendChild(btn);
+            // ALWAYS append to body for fullscreen compatibility
+            document.body.appendChild(btn);
             updateIcon();
+
+            console.log(
+              "Fullscreen button added to body for fullscreen compatibility"
+            );
           }
         }
 
