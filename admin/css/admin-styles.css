@@ -908,6 +908,82 @@ gap: 0.5rem;
 }
 }
 
+/* Membuat tabel bisa di-scroll horizontal */
+.admin-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* Tombol toggle sidebar disembunyikan di desktop */
+#sidebarToggle {
+    display: none;
+}
+
+/* Overlay untuk latar belakang gelap saat sidebar terbuka di mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999; /* di bawah sidebar, di atas konten */
+    display: none; /* Sembunyi secara default */
+}
+
+/* Terapkan aturan ini untuk layar dengan lebar di bawah 992px (tablet dan HP) */
+@media (max-width: 992px) {
+    /* Tampilkan tombol hamburger */
+    #sidebarToggle {
+        display: block;
+    }
+
+    /* Geser sidebar ke luar layar ke kiri */
+    .admin-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    /* Jika sidebar punya class "show", tampilkan ke layar */
+    .admin-sidebar.show {
+        transform: translateX(0);
+        box-shadow: 0 0 40px rgba(0,0,0,0.2);
+    }
+
+    /* Jika sidebar punya class "show", tampilkan juga overlay-nya */
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    /* Konten utama mengisi seluruh layar */
+    .admin-main {
+        margin-left: 0;
+    }
+
+    /* Atur topbar agar lebih rapi di HP */
+    .admin-topbar {
+        padding: 0.75rem 1rem;
+    }
+
+    .topbar-title {
+        flex-grow: 1; /* Biarkan judul mengisi ruang tersisa */
+        text-align: center; /* Pusatkan judul */
+    }
+
+    .admin-content {
+        padding: 1rem;
+    }
+
+    /* Tombol aksi di daftar siswa agar tidak terlalu mepet */
+    .btn-action {
+        margin-bottom: 0.5rem;
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+}
+
 /* Utilities */
 .text-admin-primary { color: var(--admin-primary); }
 .text-admin-secondary { color: var(--admin-secondary); }

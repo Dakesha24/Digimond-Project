@@ -646,4 +646,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof AdminAuth !== 'undefined') {
         AdminAuth.init();
     }
+
+                const sidebarToggle = document.getElementById('sidebarToggle');
+            const adminSidebar = document.getElementById('adminSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (sidebarToggle) {
+                // Saat tombol hamburger di-klik
+                sidebarToggle.addEventListener('click', function() {
+                    adminSidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                });
+            }
+
+            if (sidebarOverlay) {
+                // Saat overlay gelap di-klik (untuk menutup sidebar)
+                sidebarOverlay.addEventListener('click', function() {
+                    adminSidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                });
+            }
 });
