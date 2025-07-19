@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Digimod Vektars</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link href="css/admin-styles.css" rel="stylesheet" />
+  </head>
+  <body class="admin-dashboard-body">
+    <!-- Sidebar -->
+    <div class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="brand-text">
+          <h4>Admin Panel</h4>
+          <span>Digimod Vektars</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item">
+          <a href="#" class="nav-link active" data-section="dashboard">
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="#" class="nav-link" data-section="students">
+            <i class="bi bi-people"></i>
+            Daftar Siswa
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Topbar -->
+      <div
+        class="admin-topbar d-flex justify-content-between align-items-center"
+      >
+        <h1 class="topbar-title" id="pageTitle">Dashboard</h1>
+        <div class="admin-user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="fw-bold" id="adminName">Admin</div>
+            <small class="text-muted">Administrator</small>
+          </div>
+          <div class="dropdown ms-3">
+            <button
+              class="btn btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+            >
+              <i class="bi bi-gear"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="#" onclick="AdminAuth.logout()">
+                  <i class="bi bi-box-arrow-right me-2"></i>Logout
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="admin-content">
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="content-section">
+          <!-- Quick Stats Row -->
+          <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+              <div class="stats-card">
+                <div class="stats-icon schools">
+                  <i class="bi bi-building"></i>
+                </div>
+                <div class="stats-number" id="totalSchools">-</div>
+                <div class="stats-label">Total Sekolah</div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="stats-card">
+                <div class="stats-icon students">
+                  <i class="bi bi-people"></i>
+                </div>
+                <div class="stats-number" id="totalStudents">-</div>
+                <div class="stats-label">Total Siswa</div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="stats-card">
+                <div class="stats-icon active">
+                  <i class="bi bi-person-check"></i>
+                </div>
+                <div class="stats-number" id="activeStudents">-</div>
+                <div class="stats-label">Siswa Aktif</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Content Row -->
+          <div class="row">
+            <!-- Schools Card -->
+            <div class="col-lg-6 mb-4">
+              <div class="admin-card h-100">
+                <div
+                  class="card-header-custom d-flex justify-content-between align-items-center"
+                >
+                  <h5 class="mb-0">
+                    <i class="bi bi-building me-2 text-primary"></i>Sekolah
+                    Terdaftar
+                  </h5>
+                  <span class="badge bg-primary" id="schoolCount">0</span>
+                </div>
+                <div class="card-body">
+                  <div id="schoolsList">
+                    <!-- Skeleton loading -->
+                    <div class="skeleton-item">
+                      <div class="skeleton-line"></div>
+                      <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-item">
+                      <div class="skeleton-line"></div>
+                      <div class="skeleton-line short"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Logins Card -->
+            <div class="col-lg-6 mb-4">
+              <div class="admin-card h-100">
+                <div
+                  class="card-header-custom d-flex justify-content-between align-items-center"
+                >
+                  <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2 text-success"></i>Login
+                    Terbaru
+                  </h5>
+                  <small class="text-muted">Hari ini</small>
+                </div>
+                <div class="card-body">
+                  <div id="recentLogins">
+                    <!-- Skeleton loading -->
+                    <div class="skeleton-login-item">
+                      <div class="skeleton-circle"></div>
+                      <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                      </div>
+                    </div>
+                    <div class="skeleton-login-item">
+                      <div class="skeleton-circle"></div>
+                      <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- View More Button -->
+                  <div
+                    class="text-center mt-3"
+                    id="viewMoreLogins"
+                    style="display: none"
+                  >
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      onclick="goToStudentsList()"
+                    >
+                      <i class="bi bi-list-ul me-2"></i>Lihat Semua Siswa
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Row -->
+          <div class="row">
+            <div class="col-12">
+              <div class="admin-card">
+                <div class="card-body text-center py-4">
+                  <h6 class="text-muted mb-3">Aksi Cepat</h6>
+                  <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <button
+                      class="btn btn-success"
+                      onclick="showAddStudentModal()"
+                    >
+                      <i class="bi bi-plus-circle me-2"></i>Tambah Siswa
+                    </button>
+                    <button
+                      class="btn btn-primary"
+                      onclick="goToStudentsList()"
+                    >
+                      <i class="bi bi-people me-2"></i>Kelola Siswa
+                    </button>
+                    <button class="btn btn-info" onclick="refreshDashboard()">
+                      <i class="bi bi-arrow-clockwise me-2"></i>Refresh Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Students Section -->
+        <div id="studentsSection" class="content-section" style="display: none">
+          <div class="admin-card">
+            <div
+              class="card-header-custom d-flex justify-content-between align-items-center"
+            >
+              <h5><i class="bi bi-people me-2"></i>Daftar Siswa</h5>
+              <div>
+                <button
+                  class="btn btn-success me-2"
+                  onclick="showAddStudentModal()"
+                >
+                  <i class="bi bi-plus me-2"></i>Tambah Siswa
+                </button>
+                <button class="btn btn-primary" onclick="refreshStudents()">
+                  <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Search and Filter Section -->
+              <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                  <label for="searchStudent" class="form-label">
+                    <i class="bi bi-search me-2"></i>Cari Siswa
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="searchStudent"
+                    placeholder="Cari berdasarkan nama, username, atau email..."
+                    onkeyup="searchStudents()"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="schoolFilter" class="form-label">
+                    <i class="bi bi-building me-2"></i>Filter Sekolah
+                  </label>
+                  <select
+                    class="form-select"
+                    id="schoolFilter"
+                    onchange="filterStudents()"
+                  >
+                    <option value="">Semua Sekolah</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Students Table -->
+              <div id="studentsTable">
+                <!-- Students table will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Add/Edit Student -->
+    <div class="modal fade" id="studentModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="studentModalTitle">Tambah Siswa</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div id="studentModalAlert"></div>
+            <form id="studentForm">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="studentName" class="form-label"
+                    >Nama Lengkap</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="studentName"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="studentUsername" class="form-label"
+                    >Username</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="studentUsername"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="studentSchool" class="form-label"
+                    >Asal Sekolah</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="studentSchool"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="studentClass" class="form-label">Kelas</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="studentClass"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="studentEmail" class="form-label">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="studentEmail"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="studentPassword" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="studentPassword"
+                  minlength="6"
+                />
+                <div class="form-text">
+                  Kosongkan jika tidak ingin mengubah password (untuk edit)
+                </div>
+              </div>
+              <input type="hidden" id="studentId" />
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveStudent()"
+            >
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Student Activities -->
+    <div class="modal fade" id="activitiesModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="activitiesModalTitle">
+              Log Aktivitas Siswa
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div id="studentActivitiesTable">
+              <!-- Student activities will be loaded here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Admin Functions -->
+    <script src="js/admin-functions.js"></script>
+
+    <script>
+      // ================================================
+      // DASHBOARD MAIN SCRIPT
+      // ================================================
+
+      let currentEditingStudent = null;
+      let allStudents = []; // Cache untuk search functionality
+
+      // Initialize dashboard
+      document.addEventListener("DOMContentLoaded", function () {
+        // Check admin authentication
+        if (!AdminAuth.requireAuth()) {
+          return;
+        }
+
+        // Set admin name in topbar
+        const admin = AdminAuth.getCurrentAdmin();
+        if (admin) {
+          document.getElementById("adminName").textContent = admin.username;
+          document.getElementById("userAvatar").textContent = admin.username
+            .charAt(0)
+            .toUpperCase();
+        }
+
+        // Load dashboard data
+        loadDashboard();
+
+        // Setup navigation
+        setupNavigation();
+      });
+
+      // ================================================
+      // NAVIGATION
+      // ================================================
+      function setupNavigation() {
+        const navLinks = document.querySelectorAll(".nav-link");
+        navLinks.forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Update active state
+            navLinks.forEach((l) => l.classList.remove("active"));
+            this.classList.add("active");
+
+            // Show section
+            const section = this.dataset.section;
+            showSection(section);
+          });
+        });
+      }
+
+      function showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll(".content-section").forEach((section) => {
+          section.style.display = "none";
+        });
+
+        // Show selected section
+        const section = document.getElementById(sectionName + "Section");
+        if (section) {
+          section.style.display = "block";
+        }
+
+        // Update page title
+        const titles = {
+          dashboard: "Dashboard",
+          students: "Daftar Siswa",
+        };
+
+        document.getElementById("pageTitle").textContent =
+          titles[sectionName] || "Dashboard";
+
+        // Load section data
+        switch (sectionName) {
+          case "dashboard":
+            loadDashboard();
+            break;
+          case "students":
+            loadStudents();
+            loadSchoolFilters();
+            break;
+        }
+      }
+
+      // ================================================
+      // DASHBOARD FUNCTIONS - OPTIMIZED
+      // ================================================
+      async function loadDashboard() {
+        try {
+          // Set loading state for stats
+          setStatsLoading(true);
+
+          // Load basic statistics (single optimized query)
+          const stats = await DataService.getDashboardStats();
+          document.getElementById("totalSchools").textContent =
+            stats.totalSchools;
+          document.getElementById("totalStudents").textContent =
+            stats.totalStudents;
+          document.getElementById("activeStudents").textContent =
+            stats.activeStudents;
+
+          setStatsLoading(false);
+
+          // Load schools and recent logins in parallel (non-blocking)
+          Promise.all([loadSchoolsList(), loadRecentLogins()]).catch(
+            (error) => {
+              console.error("Error loading dashboard sections:", error);
+            }
+          );
+        } catch (error) {
+          console.error("Error loading dashboard:", error);
+          AdminUI.showAlert("Gagal memuat dashboard", "danger");
+          setStatsLoading(false);
+        }
+      }
+
+      // Load schools list separately
+      async function loadSchoolsList() {
+        try {
+          const schools = await DataService.getSchools();
+          const schoolsList = document.getElementById("schoolsList");
+          const schoolCount = document.getElementById("schoolCount");
+
+          schoolCount.textContent = schools.length;
+
+          if (schools.length === 0) {
+            schoolsList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-building"></i>
+                            <h6>Belum Ada Sekolah</h6>
+                            <p>Sekolah akan muncul setelah ada siswa yang mendaftar</p>
+                        </div>
+                    `;
+          } else {
+            schoolsList.innerHTML = schools
+              .slice(0, 5)
+              .map(
+                (school) => `
+                        <div class="school-item">
+                            <div class="school-info">
+                                <h6>${school.name}</h6>
+                                <small><i class="bi bi-people me-1"></i>${school.studentCount} siswa</small>
+                            </div>
+                            <span class="school-badge">${school.studentCount}</span>
+                        </div>
+                    `
+              )
+              .join("");
+
+            // Show "view more" if there are more than 5 schools
+            if (schools.length > 5) {
+              schoolsList.innerHTML += `
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-info btn-sm" onclick="goToStudentsList()">
+                                    <i class="bi bi-plus me-2"></i>Lihat ${
+                                      schools.length - 5
+                                    } sekolah lainnya
+                                </button>
+                            </div>
+                        `;
+            }
+          }
+        } catch (error) {
+          console.error("Error loading schools:", error);
+          document.getElementById("schoolsList").innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <p class="mb-0 mt-2">Gagal memuat data sekolah</p>
+                    </div>
+                `;
+        }
+      }
+
+      // Load recent logins separately
+      async function loadRecentLogins() {
+        try {
+          const recentLogins = await DataService.getRecentLogins(5); // Limit ke 5
+          const recentLoginsContainer = document.getElementById("recentLogins");
+          const viewMoreButton = document.getElementById("viewMoreLogins");
+
+          if (recentLogins.length === 0) {
+            recentLoginsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-clock-history"></i>
+                            <h6>Belum Ada Login Hari Ini</h6>
+                            <p>Login siswa akan muncul di sini</p>
+                        </div>
+                    `;
+            viewMoreButton.style.display = "none";
+          } else {
+            recentLoginsContainer.innerHTML = recentLogins
+              .map((login) => {
+                const initials = login.users.nama_lengkap
+                  .split(" ")
+                  .map((n) => n.charAt(0))
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase();
+
+                return `
+                            <div class="login-item">
+                                <div class="login-avatar">${initials}</div>
+                                <div class="login-info">
+                                    <div class="login-name">${
+                                      login.users.nama_lengkap
+                                    }</div>
+                                    <div class="login-details">
+                                        <i class="bi bi-building"></i>
+                                        <span>${login.users.asal_sekolah}</span>
+                                    </div>
+                                </div>
+                                <div class="login-time">
+                                    ${AdminUI.formatLoginTime(login.created_at)}
+                                </div>
+                            </div>
+                        `;
+              })
+              .join("");
+
+            viewMoreButton.style.display = "block";
+          }
+        } catch (error) {
+          console.error("Error loading recent logins:", error);
+          document.getElementById("recentLogins").innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <p class="mb-0 mt-2">Gagal memuat data login</p>
+                    </div>
+                `;
+        }
+      }
+
+      // Set loading state for stats cards
+      function setStatsLoading(loading) {
+        const statElements = [
+          "totalSchools",
+          "totalStudents",
+          "activeStudents",
+        ];
+        statElements.forEach((id) => {
+          const element = document.getElementById(id);
+          if (loading) {
+            element.textContent = "";
+            element.classList.add("loading");
+          } else {
+            element.classList.remove("loading");
+          }
+        });
+      }
+
+      // Navigate to students list
+      function goToStudentsList() {
+        document.querySelector('[data-section="students"]').click();
+      }
+
+      // Refresh dashboard
+      function refreshDashboard() {
+        loadDashboard();
+      }
+
+      // ================================================
+      // STUDENTS FUNCTIONS
+      // ================================================
+      async function loadStudents() {
+        try {
+          AdminUI.showLoading();
+
+          // Load all students
+          allStudents = await DataService.getAllStudents();
+
+          displayStudents(allStudents);
+        } catch (error) {
+          console.error("Error loading students:", error);
+          AdminUI.showAlert("Gagal memuat data siswa", "danger");
+        } finally {
+          AdminUI.hideLoading();
+        }
+      }
+
+      function displayStudents(students) {
+        const tableContainer = document.getElementById("studentsTable");
+
+        if (students.length === 0) {
+          tableContainer.innerHTML =
+            '<div class="text-center py-4"><i class="bi bi-people fs-1 text-muted"></i><p class="text-muted mt-2">Tidak ada siswa ditemukan</p></div>';
+          return;
+        }
+
+        const tableHTML = `
+                <div class="admin-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama</th>
+                                <th>Username</th>
+                                <th>Sekolah</th>
+                                <th>Kelas</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students
+                              .map(
+                                (student, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td><strong>${
+                                      student.nama_lengkap
+                                    }</strong></td>
+                                    <td>${student.username}</td>
+                                    <td>${student.asal_sekolah}</td>
+                                    <td><span class="badge bg-secondary">${
+                                      student.kelas
+                                    }</span></td>
+                                    <td>${student.email}</td>
+                                    <td>
+                                        ${
+                                          student.last_login
+                                            ? `<span class="badge bg-success">Aktif</span><br><small class="text-muted">Login: ${AdminUI.formatTimeAgo(
+                                                student.last_login
+                                              )}</small>`
+                                            : '<span class="badge bg-warning">Belum Login</span>'
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn-action view" onclick="viewStudentActivities('${
+                                          student.id
+                                        }', '${student.nama_lengkap}')">
+                                            <i class="bi bi-activity"></i> Aktivitas
+                                        </button>
+                                        <button class="btn-action edit" onclick="editStudent('${
+                                          student.id
+                                        }')">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                        <button class="btn-action delete" onclick="deleteStudent('${
+                                          student.id
+                                        }', '${student.nama_lengkap}')">
+                                            <i class="bi bi-trash"></i> Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            `
+                              )
+                              .join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+        tableContainer.innerHTML = tableHTML;
+      }
+
+      async function loadSchoolFilters() {
+        try {
+          const schools = await DataService.getSchools();
+          const schoolFilter = document.getElementById("schoolFilter");
+
+          schoolFilter.innerHTML = '<option value="">Semua Sekolah</option>';
+          schools.forEach((school) => {
+            schoolFilter.innerHTML += `<option value="${school.name}">${school.name}</option>`;
+          });
+        } catch (error) {
+          console.error("Error loading school filters:", error);
+        }
+      }
+
+      function searchStudents() {
+        const searchTerm = document
+          .getElementById("searchStudent")
+          .value.toLowerCase();
+        const schoolFilter = document.getElementById("schoolFilter").value;
+
+        let filteredStudents = allStudents;
+
+        // Apply school filter
+        if (schoolFilter) {
+          filteredStudents = filteredStudents.filter(
+            (student) => student.asal_sekolah === schoolFilter
+          );
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+          filteredStudents = filteredStudents.filter(
+            (student) =>
+              student.nama_lengkap.toLowerCase().includes(searchTerm) ||
+              student.username.toLowerCase().includes(searchTerm) ||
+              student.email.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        displayStudents(filteredStudents);
+      }
+
+      function filterStudents() {
+        searchStudents(); // Reuse search function with filters
+      }
+
+      function showAddStudentModal() {
+        currentEditingStudent = null;
+        document.getElementById("studentModalTitle").textContent =
+          "Tambah Siswa Baru";
+        document.getElementById("studentForm").reset();
+        document.getElementById("studentId").value = "";
+        AdminUI.clearAlerts("studentModalAlert");
+
+        const modal = new bootstrap.Modal(
+          document.getElementById("studentModal")
+        );
+        modal.show();
+      }
+
+      async function editStudent(studentId) {
+        try {
+          const student = allStudents.find((s) => s.id === studentId);
+
+          if (!student) {
+            AdminUI.showAlert("Data siswa tidak ditemukan", "danger");
+            return;
+          }
+
+          currentEditingStudent = student;
+          document.getElementById("studentModalTitle").textContent =
+            "Edit Siswa";
+          document.getElementById("studentId").value = student.id;
+          document.getElementById("studentName").value = student.nama_lengkap;
+          document.getElementById("studentUsername").value = student.username;
+          document.getElementById("studentSchool").value = student.asal_sekolah;
+          document.getElementById("studentClass").value = student.kelas;
+          document.getElementById("studentEmail").value = student.email;
+          document.getElementById("studentPassword").value = "";
+          AdminUI.clearAlerts("studentModalAlert");
+
+          const modal = new bootstrap.Modal(
+            document.getElementById("studentModal")
+          );
+          modal.show();
+        } catch (error) {
+          console.error("Error loading student for edit:", error);
+          AdminUI.showAlert("Gagal memuat data siswa", "danger");
+        }
+      }
+
+      async function saveStudent() {
+        const form = document.getElementById("studentForm");
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const studentData = {
+          nama_lengkap: document.getElementById("studentName").value.trim(),
+          username: document.getElementById("studentUsername").value.trim(),
+          asal_sekolah: document.getElementById("studentSchool").value.trim(),
+          kelas: document.getElementById("studentClass").value.trim(),
+          email: document.getElementById("studentEmail").value.trim(),
+          password: document.getElementById("studentPassword").value,
+        };
+
+        const studentId = document.getElementById("studentId").value;
+        const isEdit = !!studentId;
+
+        try {
+          AdminUI.showLoading();
+
+          let result;
+          if (isEdit) {
+            result = await DataService.updateStudent(studentId, studentData);
+          } else {
+            if (!studentData.password) {
+              AdminUI.showAlert(
+                "Password wajib diisi untuk siswa baru",
+                "danger",
+                "studentModalAlert"
+              );
+              return;
+            }
+            result = await DataService.addStudent(studentData);
+          }
+
+          if (result.success) {
+            AdminUI.showAlert(
+              `Siswa berhasil ${isEdit ? "diupdate" : "ditambahkan"}`,
+              "success"
+            );
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(
+              document.getElementById("studentModal")
+            );
+            modal.hide();
+
+            // Refresh data
+            loadStudents();
+            loadDashboard();
+          } else {
+            AdminUI.showAlert(result.error, "danger", "studentModalAlert");
+          }
+        } catch (error) {
+          console.error("Error saving student:", error);
+          AdminUI.showAlert(
+            "Gagal menyimpan data siswa",
+            "danger",
+            "studentModalAlert"
+          );
+        } finally {
+          AdminUI.hideLoading();
+        }
+      }
+
+      async function deleteStudent(studentId, studentName) {
+        if (
+          !AdminUI.confirm(
+            `Yakin ingin menghapus siswa "${studentName}"?\n\nSemua log aktivitas siswa juga akan terhapus.`
+          )
+        ) {
+          return;
+        }
+
+        try {
+          AdminUI.showLoading();
+          const result = await DataService.deleteStudent(studentId);
+
+          if (result.success) {
+            AdminUI.showAlert("Siswa berhasil dihapus", "success");
+            loadStudents();
+            loadDashboard();
+          } else {
+            AdminUI.showAlert(result.error, "danger");
+          }
+        } catch (error) {
+          console.error("Error deleting student:", error);
+          AdminUI.showAlert("Gagal menghapus siswa", "danger");
+        } finally {
+          AdminUI.hideLoading();
+        }
+      }
+
+      async function viewStudentActivities(studentId, studentName) {
+        try {
+          AdminUI.showLoading();
+          const activities = await DataService.getStudentActivitiesWithDuration(
+            studentId
+          );
+
+          document.getElementById(
+            "activitiesModalTitle"
+          ).textContent = `Log Aktivitas - ${studentName}`;
+
+          const tableContainer = document.getElementById(
+            "studentActivitiesTable"
+          );
+
+          if (activities.length === 0) {
+            tableContainer.innerHTML =
+              '<div class="text-center py-4"><i class="bi bi-activity fs-1 text-muted"></i><p class="text-muted mt-2">Belum ada aktivitas tercatat</p></div>';
+          } else {
+            const tableHTML = `
+                        <div class="admin-table">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Aktivitas</th>
+                                        <th>Waktu</th>
+                                        <th>Durasi Akses</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${activities
+                                      .map((activity, index) => {
+                                        const actType =
+                                          AdminUI.formatActivityType(
+                                            activity.activity_type,
+                                            activity.activity_description || ""
+                                          );
+
+                                        // Debug log untuk troubleshooting
+                                        console.log("Activity row:", {
+                                          type: activity.activity_type,
+                                          description:
+                                            activity.activity_description,
+                                          formatted: actType,
+                                        });
+
+                                        return `
+                                            <tr>
+                                                <td>${index + 1}</td>
+                                                <td>
+                                                    <span class="badge bg-${
+                                                      actType.class
+                                                    }">
+                                                        ${actType.text}
+                                                    </span>
+                                                    ${
+                                                      activity.activity_description &&
+                                                      activity.activity_description.includes(
+                                                        "Auto"
+                                                      )
+                                                        ? '<br><small class="text-muted">Sistem</small>'
+                                                        : activity.activity_description &&
+                                                          activity.activity_description.includes(
+                                                            "manual"
+                                                          )
+                                                        ? '<br><small class="text-muted">Manual</small>'
+                                                        : ""
+                                                    }
+                                                </td>
+                                                <td>${AdminUI.formatDate(
+                                                  activity.created_at
+                                                )}</td>
+                                                <td>
+                                                    ${
+                                                      activity.duration
+                                                        ? `<span class="text-success"><i class="bi bi-clock"></i> ${activity.duration}</span>`
+                                                        : '<span class="text-muted">-</span>'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        `;
+                                      })
+                                      .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+            tableContainer.innerHTML = tableHTML;
+          }
+
+          const modal = new bootstrap.Modal(
+            document.getElementById("activitiesModal")
+          );
+          modal.show();
+        } catch (error) {
+          console.error("Error loading student activities:", error);
+          AdminUI.showAlert("Gagal memuat aktivitas siswa", "danger");
+        } finally {
+          AdminUI.hideLoading();
+        }
+      }
+
+      function refreshStudents() {
+        loadStudents();
+      }
+    </script>
+  </body>
+</html>

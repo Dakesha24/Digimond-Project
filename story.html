@@ -22,7 +22,7 @@
 
         function shouldRequireAuth() {
           const hash = window.location.hash;
-          const skipPages = ["#63itxUiYU5C", "#5rgG71N9RMX", "#/", ""];
+          const skipPages = [];
           return (
             !skipPages.includes(hash) &&
             !window.location.pathname.includes("auth.html")

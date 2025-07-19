@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Digimod Vektars</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link href="css/admin-styles.css" rel="stylesheet">
+</head>
+<body class="admin-login-body">
+    <div class="container-fluid vh-100">
+        <div class="row h-100">
+            <!-- Left Side - Login Form -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center">
+                <div class="admin-login-card">
+                    <div class="text-center mb-4">
+                        <div class="admin-logo">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h2 class="admin-title">Admin Panel</h2>
+                        <p class="admin-subtitle">Digimod Vektars E-Learning</p>
+                    </div>
+
+                    <!-- Alert Messages -->
+                    <div id="alertContainer"></div>
+
+                    <!-- Login Form -->
+                    <form id="adminLoginForm">
+                        <div class="mb-3">
+                            <label for="adminUsername" class="form-label">
+                                <i class="bi bi-person me-2"></i>Username
+                            </label>
+                            <input type="text" class="form-control admin-input" id="adminUsername" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="adminPassword" class="form-label">
+                                <i class="bi bi-lock me-2"></i>Password
+                            </label>
+                            <input type="password" class="form-control admin-input" id="adminPassword" required>
+                        </div>
+                        
+                        <button type="submit" class="btn admin-btn-primary w-100" id="loginBtn">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Masuk Admin Panel
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <a href="../auth.html" class="admin-link">
+                            <i class="bi bi-arrow-left me-2"></i>Kembali ke Login Siswa
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - Hero Section -->
+            <div class="col-lg-6 admin-hero-section d-none d-lg-flex">
+                <div class="admin-hero-content">
+                    <h1 class="hero-title">
+                        <i class="bi bi-graph-up-arrow me-3"></i>
+                        Dashboard Admin
+                    </h1>
+                    <p class="hero-description">
+                        Kelola siswa, pantau aktivitas pembelajaran, dan analisis data dengan mudah
+                    </p>
+                    <div class="hero-features">
+                        <div class="feature-item">
+                            <i class="bi bi-people"></i>
+                            <span>Manajemen Siswa</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-activity"></i>
+                            <span>Log Aktivitas</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-building"></i>
+                            <span>Data Sekolah</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Admin Functions -->
+    <script src="js/admin-functions.js"></script>
+
+    <script>
+        // ================================================
+        // ADMIN LOGIN FUNCTIONALITY
+        // ================================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize admin system
+            AdminAuth.init();
+            
+            // Check if already logged in
+            if (AdminAuth.isLoggedIn()) {
+                window.location.href = 'admin-dashboard.html';
+            }
+        });
+
+        // Handle login form submission
+        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            // Show loading state
+            AdminUI.setButtonLoading(loginBtn, true);
+            AdminUI.clearAlerts();
+            
+            try {
+                const success = await AdminAuth.login(username, password);
+                
+                if (success) {
+                    AdminUI.showAlert('Login berhasil! Mengalihkan...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'admin-dashboard.html';
+                    }, 1500);
+                } else {
+                    AdminUI.showAlert('Username atau password salah!', 'danger');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                AdminUI.showAlert('Terjadi kesalahan saat login', 'danger');
+            } finally {
+                AdminUI.setButtonLoading(loginBtn, false);
+            }
+        });
+    </script>
+</body>
+</html>
