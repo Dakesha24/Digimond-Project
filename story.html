@@ -100,7 +100,6 @@
     </script>
 
     <!-- Logout System -->
-    <!-- Ganti bagian script Logout System dengan yang ini -->
     <script>
       (function () {
         "use strict";
@@ -114,10 +113,10 @@
           button.setAttribute("aria-label", "Logout dari sistem");
           button.setAttribute("title", "Logout dari sistem");
           button.innerHTML = `
-        <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    `;
+            <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
           button.addEventListener("click", performLogout);
           return button;
         }
@@ -174,11 +173,17 @@
 
           target.appendChild(logoutBtn);
 
-          // PERBAIKAN: Multiple force visibility dengan delay berbeda
-          setTimeout(() => forceLogoutButtonVisibility(), 50);
-          setTimeout(() => forceLogoutButtonVisibility(), 200);
-          setTimeout(() => forceLogoutButtonVisibility(), 500);
-          setTimeout(() => forceLogoutButtonVisibility(), 1000);
+          // Force visibility if in fullscreen
+          setTimeout(() => {
+            if (
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement
+            ) {
+              forceLogoutButtonVisibility();
+            }
+          }, 100);
 
           console.log(
             `Logout button added to ${
@@ -210,25 +215,15 @@
         function init() {
           initLogoutButton();
 
-          // Monitor changes
+          // Monitor changes like fullscreen button does
           window.addEventListener("hashchange", () => {
             setTimeout(initLogoutButton, 100);
           });
 
-          // PERBAIKAN: Interval check lebih sering untuk pertama kali
-          let checkCount = 0;
-          const intervalId = setInterval(() => {
-            initLogoutButton();
-            checkCount++;
+          // Periodic check
+          setInterval(initLogoutButton, 3000);
 
-            // Setelah 10 kali check (30 detik), kurangi frekuensi
-            if (checkCount >= 10) {
-              clearInterval(intervalId);
-              setInterval(initLogoutButton, 5000); // Check setiap 5 detik
-            }
-          }, 1000); // Check setiap 1 detik untuk 30 detik pertama
-
-          // Monitor untuk fullscreen changes
+          // Monitor for fullscreen changes to force button visibility
           [
             "fullscreenchange",
             "webkitfullscreenchange",
@@ -236,42 +231,18 @@
             "msfullscreenchange",
           ].forEach((event) => {
             document.addEventListener(event, () => {
-              // PERBAIKAN: Multiple force dengan delay berbeda
-              setTimeout(forceLogoutButtonVisibility, 50);
-              setTimeout(forceLogoutButtonVisibility, 200);
-              setTimeout(forceLogoutButtonVisibility, 500);
-              setTimeout(forceLogoutButtonVisibility, 1000);
-            });
-          });
-
-          // PERBAIKAN: Observer untuk perubahan DOM
-          const observer = new MutationObserver(() => {
-            if (
-              document.fullscreenElement ||
-              document.webkitFullscreenElement ||
-              document.mozFullScreenElement ||
-              document.msFullscreenElement
-            ) {
               setTimeout(forceLogoutButtonVisibility, 100);
-            }
-          });
-
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ["style", "class"],
+            });
           });
         }
 
-        // PERBAIKAN: Delay inisialisasi lebih pendek
+        // Initialize same timing as fullscreen button
         if (document.readyState === "loading") {
-          document.addEventListener(
-            "DOMContentLoaded",
-            () => setTimeout(init, 100) // Dari 300ms ke 100ms
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(init, 300)
           );
         } else {
-          setTimeout(init, 100); // Dari 300ms ke 100ms
+          setTimeout(init, 300);
         }
 
         // Export
