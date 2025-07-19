@@ -1,314 +1,757 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-US">
-<head>
-  <meta charset="utf-8">
-  <!-- Created using Storyline 3 - http://www.articulate.com  -->
-  <!-- version: 3.17.27621.0 -->
-  <title>Digimod-Vektars</title>
-  <meta http-equiv="x-ua-compatible" content="IE=edge"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no,minimal-ui"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <style>
-    html, body { height: 100%; padding: 0; margin: 0 }
-    #app { height: 100%; width: 100%; }
-  </style>
-  
-  <script>window.THREE = { };</script>
+  <head>
+    <div></div>
+    <meta charset="utf-8" />
+    <title>Digimod-Vektars</title>
+    <meta http-equiv="x-ua-compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no,shrink-to-fit=no,minimal-ui"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
 
-  <!-- CLEAN FULLSCREEN BUTTON - Tambahkan sebelum </head> -->
-<style>
-.storyline-fs-btn {
-  background: rgba(44, 62, 80, 0.9);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  outline: none;
-}
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="html5/data/js/supabase-config.js"></script>
 
-.storyline-fs-btn:hover { background: rgba(52, 73, 94, 0.95); transform: scale(1.05); }
-.storyline-fs-btn:active { transform: scale(0.95); }
-.storyline-fs-btn:focus { outline: 3px solid #4A90E2; outline-offset: 2px; }
+    <!-- Auth Guard -->
+    <script>
+      (function () {
+        "use strict";
 
-.storyline-fs-icon { fill: currentColor; pointer-events: none; }
-
-/* Desktop: inside frame */
-@media (min-width: 769px) {
-  .storyline-fs-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    width: 36px;
-    height: 36px;
-    padding: 8px;
-  }
-  .storyline-fs-icon { width: 16px; height: 16px; }
-}
-
-/* Mobile: fixed position */
-@media (max-width: 768px) {
-  .storyline-fs-btn {
-    position: fixed !important;
-    top: 15px;
-    right: 15px;
-    z-index: 9999 !important;
-    width: 44px;
-    height: 44px;
-    padding: 10px;
-  }
-  .storyline-fs-icon { width: 20px; height: 20px; }
-}
-
-.storyline-fullscreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9998 !important; background: #000; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); }
-</style>
-
-<script>
-(function() {
-  'use strict';
-  
-  const isMobile = window.isMobile?.any || window.globals?.deviceView?.mobile || window.innerWidth <= 768;
-  let btn, isFS = false, container;
-  
-  // Create button
-  function createBtn() {
-    const button = document.createElement('button');
-    button.className = 'storyline-fs-btn';
-    button.setAttribute('aria-label', 'Toggle fullscreen');
-    button.setAttribute('title', 'Toggle Fullscreen');
-    button.innerHTML = `
-      <svg class="storyline-fs-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-      </svg>
-      <span class="sr-only">Toggle fullscreen</span>
-    `;
-    return button;
-  }
-  
-  // Update icon and accessibility
-  function updateIcon() {
-    if (!btn) return;
-    const path = btn.querySelector('path');
-    const srText = btn.querySelector('.sr-only');
-    
-    if (isFS) {
-      path.setAttribute('d', 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z');
-      btn.setAttribute('aria-label', 'Exit fullscreen');
-      srText.textContent = 'Exit fullscreen';
-    } else {
-      path.setAttribute('d', 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z');
-      btn.setAttribute('aria-label', 'Enter fullscreen');
-      srText.textContent = 'Enter fullscreen';
-    }
-  }
-  
-  // Toggle fullscreen
-  function toggle() {
-    if (!container) return;
-    
-    if (!isFS) {
-      const element = container;
-      if (element.requestFullscreen) element.requestFullscreen();
-      else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
-      else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
-      else if (element.msRequestFullscreen) element.msRequestFullscreen();
-    } else {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-      else if (document.msExitFullscreen) document.msExitFullscreen();
-    }
-  }
-  
-  // Handle fullscreen change
-  function handleChange() {
-    isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || 
-              document.mozFullScreenElement || document.msFullscreenElement);
-    
-    updateIcon();
-    
-    if (container) {
-      container.classList.toggle('storyline-fullscreen', isFS);
-    }
-  }
-  
-  // Initialize
-  function init() {
-    container = document.querySelector('#preso') || document.documentElement;
-    
-    if (!btn) {
-      btn = createBtn();
-      btn.addEventListener('click', toggle);
-      btn.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggle();
+        function shouldRequireAuth() {
+          const hash = window.location.hash;
+          const skipPages = ["#63itxUiYU5C", "#5rgG71N9RMX", "#/", ""];
+          return (
+            !skipPages.includes(hash) &&
+            !window.location.pathname.includes("auth.html")
+          );
         }
-      });
-      
-      // Add to appropriate container
-      const target = isMobile ? document.body : 
-                    (document.querySelector('#preso') || document.body);
-      
-      if (!isMobile && target.style.position === 'static') {
-        target.style.position = 'relative';
-      }
-      
-      target.appendChild(btn);
-      updateIcon();
-      console.log(`Fullscreen button added (${isMobile ? 'mobile' : 'desktop'} mode)`);
-    }
-  }
-  
-  // Event listeners
-  ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'msfullscreenchange']
-    .forEach(event => document.addEventListener(event, handleChange));
-  
-  // F11 shortcut (desktop only)
-  if (!isMobile) {
-    document.addEventListener('keydown', e => {
-      if (e.key === 'F11') {
-        e.preventDefault();
-        toggle();
-      }
-    });
-  }
-  
-  // Start when ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
-  } else {
-    setTimeout(init, 300);
-  }
-  
-})();
-</script>
-</head>
-<body style="background: #FFFFFF" class="cs-HTML theme-classic">
-  <!-- 360 -->
-  <script>!function(e){var i=/iPhone/i,o=/iPod/i,n=/iPad/i,t=/(?=.*\bAndroid\b)(?=.*\bMobile\b)/i,d=/Android/i,s=/(?=.*\bAndroid\b)(?=.*\bSD4930UR\b)/i,b=/(?=.*\bAndroid\b)(?=.*\b(?:KFOT|KFTT|KFJWI|KFJWA|KFSOWI|KFTHWI|KFTHWA|KFAPWI|KFAPWA|KFARWI|KFASWI|KFSAWI|KFSAWA)\b)/i,r=/IEMobile/i,h=/(?=.*\bWindows\b)(?=.*\bARM\b)/i,a=/BlackBerry/i,l=/BB10/i,p=/Opera Mini/i,f=/(CriOS|Chrome)(?=.*\bMobile\b)/i,u=/(?=.*\bFirefox\b)(?=.*\bMobile\b)/i,c=new RegExp("(?:Nexus 7|BNTV250|Kindle Fire|Silk|GT-P1000)","i"),w=function(e,i){return e.test(i)},A=function(e){var A=e||navigator.userAgent,v=A.split("[FBAN");if(void 0!==v[1]&&(A=v[0]),this.apple={phone:w(i,A),ipod:w(o,A),tablet:!w(i,A)&&w(n,A),device:w(i,A)||w(o,A)||w(n,A)},this.amazon={phone:w(s,A),tablet:!w(s,A)&&w(b,A),device:w(s,A)||w(b,A)},this.android={phone:w(s,A)||w(t,A),tablet:!w(s,A)&&!w(t,A)&&(w(b,A)||w(d,A)),device:w(s,A)||w(b,A)||w(t,A)||w(d,A)},this.windows={phone:w(r,A),tablet:w(h,A),device:w(r,A)||w(h,A)},this.other={blackberry:w(a,A),blackberry10:w(l,A),opera:w(p,A),firefox:w(u,A),chrome:w(f,A),device:w(a,A)||w(l,A)||w(p,A)||w(u,A)||w(f,A)},this.seven_inch=w(c,A),this.any=this.apple.device||this.android.device||this.windows.device||this.other.device||this.seven_inch,this.phone=this.apple.phone||this.android.phone||this.windows.phone,this.tablet=this.apple.tablet||this.android.tablet||this.windows.tablet,"undefined"==typeof window)return this},v=function(){var e=new A;return e.Class=A,e};"undefined"!=typeof module&&module.exports&&"undefined"==typeof window?module.exports=A:"undefined"!=typeof module&&module.exports&&"undefined"!=typeof window?module.exports=v():"function"==typeof define&&define.amd?define("isMobile",[],e.isMobile=v()):e.isMobile=v()}(this);
-    window.isMobile.apple.tablet = window.isMobile.apple.tablet ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    window.isMobile.apple.device = window.isMobile.apple.device || window.isMobile.apple.tablet;
-    window.isMobile.tablet = window.isMobile.tablet || window.isMobile.apple.tablet;
-    window.isMobile.any = window.isMobile.any || window.isMobile.apple.tablet;
-  </script>
 
-  <div id="focus-sink" tabindex="-1"></div>
+        function checkAuth() {
+          if (!shouldRequireAuth()) return true;
 
-  <div id="preso"></div>
-  <script>
-    window.DS = {};
-    window.globals = {
-      DATA_PATH_BASE: '',
-      HAS_FRAME: true,
-      HAS_SLIDE: true,
-
-      lmsPresent: false,
-      tinCanPresent: false,
-      cmi5Present: false,
-      aoSupport: false,
-      scale: 'noscale',
-      captureRc: false,
-      browserSize: 'optimal',
-      bgColor: '#FFFFFF',
-      features: '',
-      themeName: 'classic',
-      preloaderColor: '#FFFFFF',
-      suppressAnalytics: true,
-      productChannel: 'enterprise',
-      publishSource: 'storyline',
-      aid: '',
-      cid: '67d594d7-92a8-494c-89df-a95b3e0aeeef',
-      playerVersion: '3.17.27621.0',
-      maxIosVideoElements: 10,
-
-      
-      parseParams: function(qs) {
-        if (window.globals.parsedParams != null) {
-          return window.globals.parsedParams;
+          const currentUser = sessionStorage.getItem("currentUser");
+          if (!currentUser) {
+            window.location.href = "auth.html";
+            return false;
+          }
+          return true;
         }
-        qs = (qs || window.location.search.substr(1)).split('+').join(' ');
-        var params = {},
+
+        function setUserDataInStoryline() {
+          try {
+            const userData = sessionStorage.getItem("currentUser");
+            if (!userData) return;
+
+            const user = JSON.parse(userData);
+            const player = GetPlayer();
+
+            if (player) {
+              player.SetVar("Namalengkap", user.nama_lengkap || "");
+              player.SetVar("Username", user.username || "");
+              player.SetVar("Kelas", user.kelas || "");
+              player.SetVar("AsalSekolah", user.asal_sekolah || "");
+              player.SetVar("Email", user.email || "");
+              player.SetVar("UserID", user.id || "");
+            }
+          } catch (error) {
+            console.error("Error setting user data:", error);
+          }
+        }
+
+        // Intercept login slide
+        function interceptLoginSlide() {
+          const hash = window.location.hash;
+          if (hash.includes("5orjAoE8cPl")) {
+            const currentUser = sessionStorage.getItem("currentUser");
+            if (currentUser) {
+              window.location.hash = "/next-slide";
+            } else {
+              window.location.href = "auth.html";
+            }
+          }
+        }
+
+        function init() {
+          if (!checkAuth()) return;
+
+          window.addEventListener("hashchange", function () {
+            checkAuth();
+            interceptLoginSlide();
+          });
+
+          if (typeof GetPlayer === "function") {
+            setUserDataInStoryline();
+          } else {
+            window.addEventListener("load", () =>
+              setTimeout(setUserDataInStoryline, 1000)
+            );
+          }
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
+    </script>
+
+    <!-- Logout System -->
+    <script>
+      (function () {
+        "use strict";
+
+        const isMobile = window.innerWidth <= 768;
+        let logoutBtn = null;
+
+        function createLogoutButton() {
+          const button = document.createElement("button");
+          button.className = "logout-btn";
+          button.setAttribute("aria-label", "Logout dari sistem");
+          button.setAttribute("title", "Logout dari sistem");
+          button.innerHTML = `
+            <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+          button.addEventListener("click", performLogout);
+          return button;
+        }
+
+        function performLogout() {
+          if (!confirm("Yakin ingin keluar dari sistem?")) return;
+
+          const user = JSON.parse(
+            sessionStorage.getItem("currentUser") || "{}"
+          );
+          if (user.id && window.AuthService) {
+            window.AuthService.logActivity(
+              user.id,
+              "logout",
+              "User logged out"
+            );
+          }
+
+          sessionStorage.clear();
+          window.location.href = "story.html";
+        }
+
+        function shouldShowLogoutButton() {
+          const isLoggedIn = sessionStorage.getItem("currentUser");
+          const hash = window.location.hash;
+          const isIntroSlide =
+            hash.includes("63itxUiYU5C") || hash.includes("5rgG71N9RMX");
+          const isAuthPage = window.location.pathname.includes("auth.html");
+
+          return isLoggedIn && !isIntroSlide && !isAuthPage;
+        }
+
+        function initLogoutButton() {
+          // Remove existing button
+          if (logoutBtn) {
+            logoutBtn.remove();
+            logoutBtn = null;
+          }
+
+          // Check if should show
+          if (!shouldShowLogoutButton()) return;
+
+          // Create button
+          logoutBtn = createLogoutButton();
+
+          const target = isMobile
+            ? document.body
+            : document.querySelector("#preso") || document.body;
+
+          // Ensure container positioning like fullscreen button
+          if (!isMobile && target.style.position === "static") {
+            target.style.position = "relative";
+          }
+
+          target.appendChild(logoutBtn);
+          console.log(
+            `Logout button added to ${
+              target === document.body ? "body" : "#preso"
+            } (${isMobile ? "mobile" : "desktop"} mode)`
+          );
+        }
+
+        function init() {
+          initLogoutButton();
+
+          // Monitor changes like fullscreen button does
+          window.addEventListener("hashchange", () => {
+            setTimeout(initLogoutButton, 100);
+          });
+
+          // Periodic check
+          setInterval(initLogoutButton, 3000);
+        }
+
+        // Initialize same timing as fullscreen button
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(init, 300)
+          );
+        } else {
+          setTimeout(init, 300);
+        }
+
+        // Export
+        window.performLogout = performLogout;
+      })();
+
+      // Global functions
+      function logoutUser() {
+        if (window.performLogout) window.performLogout();
+      }
+
+      function getUserDisplayName() {
+        const user = sessionStorage.getItem("currentUser");
+        return user ? JSON.parse(user).nama_lengkap || "User" : "Guest";
+      }
+    </script>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+
+      #app {
+        height: 100%;
+        width: 100%;
+      }
+
+      /* Fullscreen Button */
+      .storyline-fs-btn {
+        background: rgba(44, 62, 80, 0.9);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        outline: none;
+      }
+
+      .storyline-fs-btn:hover {
+        background: rgba(52, 73, 94, 0.95);
+        transform: scale(1.05);
+      }
+
+      .storyline-fs-icon {
+        fill: currentColor;
+        pointer-events: none;
+      }
+
+      @media (min-width: 769px) {
+        .storyline-fs-btn {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 1000;
+          width: 36px;
+          height: 36px;
+          padding: 8px;
+        }
+
+        .storyline-fs-icon {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .storyline-fs-btn {
+          position: fixed !important;
+          top: 15px;
+          right: 15px;
+          z-index: 9999 !important;
+          width: 44px;
+          height: 44px;
+          padding: 10px;
+        }
+
+        .storyline-fs-icon {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .storyline-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9998 !important;
+        background: #000;
+      }
+
+      /* Clean Logout Button */
+      /* Fixed Logout Button - Follow Fullscreen Pattern */
+      .logout-btn {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        outline: none;
+      }
+
+      .logout-btn:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      }
+
+      .logout-btn .logout-icon {
+        fill: currentColor;
+        pointer-events: none;
+      }
+
+      /* Desktop: inside frame - same as fullscreen button */
+      @media (min-width: 769px) {
+        .logout-btn {
+          position: absolute;
+          top: 56px;
+          /* 10px (fullscreen top) + 36px (fullscreen height) + 10px (gap) */
+          right: 10px;
+          /* Same as fullscreen button */
+          z-index: 1001;
+          /* Slightly higher than fullscreen (1000) */
+          width: 36px;
+          height: 36px;
+          padding: 8px;
+        }
+
+        .logout-btn .logout-icon {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      /* Mobile: fixed position - same as fullscreen button */
+      @media (max-width: 768px) {
+        .logout-btn {
+          position: fixed !important;
+          top: 70px;
+          /* 15px (fullscreen top) + 44px (fullscreen height) + 11px (gap) */
+          right: 15px;
+          /* Same as fullscreen button */
+          z-index: 9999 !important;
+          /* Same as fullscreen button */
+          width: 44px;
+          height: 44px;
+          padding: 10px;
+        }
+
+        .logout-btn .logout-icon {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      /* Tooltip */
+      .logout-btn::after {
+        content: "Logout";
+        position: absolute;
+        right: 45px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        pointer-events: none;
+        z-index: 100000;
+      }
+
+      .logout-btn:hover::after {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
+    </style>
+
+    <script>
+      window.THREE = {};
+    </script>
+
+    <!-- Fullscreen Script -->
+    <script>
+      (function () {
+        "use strict";
+
+        const isMobile = window.innerWidth <= 768;
+        let btn,
+          isFS = false,
+          container;
+
+        function createBtn() {
+          const button = document.createElement("button");
+          button.className = "storyline-fs-btn";
+          button.setAttribute("aria-label", "Toggle fullscreen");
+          button.setAttribute("title", "Toggle Fullscreen");
+          button.innerHTML = `
+        <svg class="storyline-fs-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+        </svg>
+        <span class="sr-only">Toggle fullscreen</span>
+      `;
+          return button;
+        }
+
+        function updateIcon() {
+          if (!btn) return;
+          const path = btn.querySelector("path");
+          const srText = btn.querySelector(".sr-only");
+
+          if (isFS) {
+            path.setAttribute(
+              "d",
+              "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"
+            );
+            btn.setAttribute("aria-label", "Exit fullscreen");
+            srText.textContent = "Exit fullscreen";
+          } else {
+            path.setAttribute(
+              "d",
+              "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+            );
+            btn.setAttribute("aria-label", "Enter fullscreen");
+            srText.textContent = "Enter fullscreen";
+          }
+        }
+
+        function toggle() {
+          if (!container) return;
+
+          if (!isFS) {
+            const element = container;
+            if (element.requestFullscreen) element.requestFullscreen();
+            else if (element.webkitRequestFullscreen)
+              element.webkitRequestFullscreen();
+            else if (element.mozRequestFullScreen)
+              element.mozRequestFullScreen();
+            else if (element.msRequestFullscreen) element.msRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen)
+              document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen)
+              document.mozCancelFullScreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+          }
+        }
+
+        function handleChange() {
+          isFS = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+
+          updateIcon();
+
+          if (container) {
+            container.classList.toggle("storyline-fullscreen", isFS);
+          }
+        }
+
+        function init() {
+          container =
+            document.querySelector("#preso") || document.documentElement;
+
+          if (!btn) {
+            btn = createBtn();
+            btn.addEventListener("click", toggle);
+
+            const target = isMobile
+              ? document.body
+              : document.querySelector("#preso") || document.body;
+
+            if (!isMobile && target.style.position === "static") {
+              target.style.position = "relative";
+            }
+
+            target.appendChild(btn);
+            updateIcon();
+          }
+        }
+
+        [
+          "fullscreenchange",
+          "webkitfullscreenchange",
+          "mozfullscreenchange",
+          "msfullscreenchange",
+        ].forEach((event) => document.addEventListener(event, handleChange));
+
+        if (!isMobile) {
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "F11") {
+              e.preventDefault();
+              toggle();
+            }
+          });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(init, 300)
+          );
+        } else {
+          setTimeout(init, 300);
+        }
+      })();
+    </script>
+  </head>
+
+  <body style="background: #ffffff" class="cs-HTML theme-classic">
+    <script>
+      !(function (e) {
+        var i = /iPhone/i,
+          o = /iPod/i,
+          n = /iPad/i,
+          t = /(?=.*\bAndroid\b)(?=.*\bMobile\b)/i,
+          d = /Android/i,
+          s = /(?=.*\bAndroid\b)(?=.*\bSD4930UR\b)/i,
+          b =
+            /(?=.*\bAndroid\b)(?=.*\b(?:KFOT|KFTT|KFJWI|KFJWA|KFSOWI|KFTHWI|KFTHWA|KFAPWI|KFAPWA|KFARWI|KFASWI|KFSAWI|KFSAWA)\b)/i,
+          r = /IEMobile/i,
+          h = /(?=.*\bWindows\b)(?=.*\bARM\b)/i,
+          a = /BlackBerry/i,
+          l = /BB10/i,
+          p = /Opera Mini/i,
+          f = /(CriOS|Chrome)(?=.*\bMobile\b)/i,
+          u = /(?=.*\bFirefox\b)(?=.*\bMobile\b)/i,
+          c = new RegExp("(?:Nexus 7|BNTV250|Kindle Fire|Silk|GT-P1000)", "i"),
+          w = function (e, i) {
+            return e.test(i);
+          },
+          A = function (e) {
+            var A = e || navigator.userAgent,
+              v = A.split("[FBAN");
+            if (
+              (void 0 !== v[1] && (A = v[0]),
+              (this.apple = {
+                phone: w(i, A),
+                ipod: w(o, A),
+                tablet: !w(i, A) && w(n, A),
+                device: w(i, A) || w(o, A) || w(n, A),
+              }),
+              (this.amazon = {
+                phone: w(s, A),
+                tablet: !w(s, A) && w(b, A),
+                device: w(s, A) || w(b, A),
+              }),
+              (this.android = {
+                phone: w(s, A) || w(t, A),
+                tablet: !w(s, A) && !w(t, A) && (w(b, A) || w(d, A)),
+                device: w(s, A) || w(b, A) || w(t, A) || w(d, A),
+              }),
+              (this.windows = {
+                phone: w(r, A),
+                tablet: w(h, A),
+                device: w(r, A) || w(h, A),
+              }),
+              (this.other = {
+                blackberry: w(a, A),
+                blackberry10: w(l, A),
+                opera: w(p, A),
+                firefox: w(u, A),
+                chrome: w(f, A),
+                device: w(a, A) || w(l, A) || w(p, A) || w(u, A) || w(f, A),
+              }),
+              (this.seven_inch = w(c, A)),
+              (this.any =
+                this.apple.device ||
+                this.android.device ||
+                this.windows.device ||
+                this.other.device ||
+                this.seven_inch),
+              (this.phone =
+                this.apple.phone || this.android.phone || this.windows.phone),
+              (this.tablet =
+                this.apple.tablet ||
+                this.android.tablet ||
+                this.windows.tablet),
+              "undefined" == typeof window)
+            )
+              return this;
+          },
+          v = function () {
+            var e = new A();
+            return (e.Class = A), e;
+          };
+        "undefined" != typeof module &&
+        module.exports &&
+        "undefined" == typeof window
+          ? (module.exports = A)
+          : "undefined" != typeof module &&
+            module.exports &&
+            "undefined" != typeof window
+          ? (module.exports = v())
+          : "function" == typeof define && define.amd
+          ? define("isMobile", [], (e.isMobile = v()))
+          : (e.isMobile = v());
+      })(this);
+      window.isMobile.apple.tablet =
+        window.isMobile.apple.tablet ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      window.isMobile.apple.device =
+        window.isMobile.apple.device || window.isMobile.apple.tablet;
+      window.isMobile.tablet =
+        window.isMobile.tablet || window.isMobile.apple.tablet;
+      window.isMobile.any = window.isMobile.any || window.isMobile.apple.tablet;
+    </script>
+
+    <div id="focus-sink" tabindex="-1"></div>
+    <div id="preso"></div>
+
+    <script>
+      window.DS = {};
+      window.globals = {
+        DATA_PATH_BASE: "",
+        HAS_FRAME: true,
+        HAS_SLIDE: true,
+        lmsPresent: false,
+        tinCanPresent: false,
+        cmi5Present: false,
+        aoSupport: false,
+        scale: "noscale",
+        captureRc: false,
+        browserSize: "optimal",
+        bgColor: "#FFFFFF",
+        features: "",
+        themeName: "classic",
+        preloaderColor: "#FFFFFF",
+        suppressAnalytics: true,
+        productChannel: "enterprise",
+        publishSource: "storyline",
+        aid: "",
+        cid: "67d594d7-92a8-494c-89df-a95b3e0aeeef",
+        playerVersion: "3.17.27621.0",
+        maxIosVideoElements: 10,
+
+        parseParams: function (qs) {
+          if (window.globals.parsedParams != null) {
+            return window.globals.parsedParams;
+          }
+          qs = (qs || window.location.search.substr(1)).split("+").join(" ");
+          var params = {},
             tokens,
             re = /[?&]?([^=]+)=([^&]*)/g;
 
-        while (tokens = re.exec(qs)) {
-          params[decodeURIComponent(tokens[1]).trim()] =
-            decodeURIComponent(tokens[2]).trim();
-        }
-        window.globals.parsedParams = params;
-        return params;
-      }
-
-    };
-
-    (function() {
-
-      var classTypes = [ 'desktop', 'mobile', 'phone', 'tablet' ];
-
-      var addDeviceClasses = function(prefix, testObj) {
-        var curr, i;
-        for (i = 0; i < classTypes.length; i++) {
-          curr = classTypes[i];
-          if (testObj[curr]) {
-            document.body.classList.add(prefix + curr);
+          while ((tokens = re.exec(qs))) {
+            params[decodeURIComponent(tokens[1]).trim()] = decodeURIComponent(
+              tokens[2]
+            ).trim();
           }
-        }
+          window.globals.parsedParams = params;
+          return params;
+        },
       };
 
-      var params = window.globals.parseParams(),
-          isDevicePreview = params.devicepreview === '1',
-          isPhoneOverride = params.deviceType === 'phone' || (isDevicePreview && params.phone == '1'),
-          isTabletOverride = (params.deviceType === 'tablet' || isDevicePreview) && !isPhoneOverride,
+      (function () {
+        var classTypes = ["desktop", "mobile", "phone", "tablet"];
+
+        var addDeviceClasses = function (prefix, testObj) {
+          var curr, i;
+          for (i = 0; i < classTypes.length; i++) {
+            curr = classTypes[i];
+            if (testObj[curr]) {
+              document.body.classList.add(prefix + curr);
+            }
+          }
+        };
+
+        var params = window.globals.parseParams(),
+          isDevicePreview = params.devicepreview === "1",
+          isPhoneOverride =
+            params.deviceType === "phone" ||
+            (isDevicePreview && params.phone == "1"),
+          isTabletOverride =
+            (params.deviceType === "tablet" || isDevicePreview) &&
+            !isPhoneOverride,
           isMobileOverride = isPhoneOverride || isTabletOverride;
 
-      var deviceView = {
-        desktop: !window.isMobile.any && !isMobileOverride,
-        mobile: window.isMobile.any || isMobileOverride,
-        phone: isPhoneOverride || (window.isMobile.phone && !isTabletOverride),
-        tablet: isTabletOverride || window.isMobile.tablet
-      };
+        var deviceView = {
+          desktop: !window.isMobile.any && !isMobileOverride,
+          mobile: window.isMobile.any || isMobileOverride,
+          phone:
+            isPhoneOverride || (window.isMobile.phone && !isTabletOverride),
+          tablet: isTabletOverride || window.isMobile.tablet,
+        };
 
-      window.globals.deviceView = deviceView;
-      window.isMobile.desktop = !window.isMobile.any;
-      window.isMobile.mobile = window.isMobile.any;
+        window.globals.deviceView = deviceView;
+        window.isMobile.desktop = !window.isMobile.any;
+        window.isMobile.mobile = window.isMobile.any;
 
-      addDeviceClasses('view-', deviceView);
+        addDeviceClasses("view-", deviceView);
+      })();
+    </script>
 
-    })();
-  </script>
-  
-  <script src='story_content/user.js' type=text/javascript></script>
-  <div class="slide-loader"></div>
+    <script src="story_content/user.js" type="text/javascript"></script>
+    <div class="slide-loader"></div>
+    <script>
+      if (window.globals.deviceView.isMobile) {
+        var doc = document,
+          loader = doc.body.querySelector(".slide-loader");
+        [1, 2, 3].forEach(function (n) {
+          var d = doc.createElement("div");
+          d.style.backgroundColor = window.globals.preloaderColor;
+          d.classList.add("mobile-loader-dot");
+          d.classList.add("dot" + n);
+          loader.appendChild(d);
+        });
+      }
+    </script>
 
-  <script>
-    if (window.globals.deviceView.isMobile) { var doc = document, loader = doc.body.querySelector('.slide-loader'); [ 1, 2, 3 ].forEach(function(n) { var d = doc.createElement('div'); d.style.backgroundColor = window.globals.preloaderColor; d.classList.add('mobile-loader-dot'); d.classList.add('dot' + n); loader.appendChild(d); }); }
-  </script>
+    <div class="mobile-load-title-overlay" style="display: none">
+      <div class="mobile-load-title">Digimod-Vektars</div>
+    </div>
 
-  <div class="mobile-load-title-overlay" style="display: none">
-    <div class="mobile-load-title">Digimod-Vektars</div>
-  </div>
+    <div class="mobile-chrome-warning"></div>
 
-  <div class="mobile-chrome-warning"></div>
+    <script>
+      if (window.autoSpider && window.vInterfaceObject) {
+        document.querySelector(".mobile-load-title-overlay").style.display =
+          "none";
+      }
+    </script>
 
-  <script>
-    
-    if (window.autoSpider && window.vInterfaceObject) {
-      document.querySelector('.mobile-load-title-overlay').style.display = 'none';
-    }
-  </script>
-
-  
-
-  <link rel="stylesheet" href="html5/data/css/output.min.css" data-noprefix/>
-</body>
-<script src="html5/lib/scripts/bootstrapper.min.js"></script>
+    <link rel="stylesheet" href="html5/data/css/output.min.css" data-noprefix />
+  </body>
+  <script src="html5/lib/scripts/bootstrapper.min.js"></script>
 </html>
