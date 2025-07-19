@@ -98,13 +98,13 @@ const AdminAuth = {
     // Logout admin
     logout: function() {
         sessionStorage.removeItem('adminUser');
-        window.location.href = 'admin/admin-login.html';
+        window.location.href = 'admin-login.html';
     },
 
     // Require authentication (redirect if not logged in)
     requireAuth: function() {
         if (!this.isLoggedIn()) {
-            window.location.href = 'admin/admin-login.html';
+            window.location.href = 'admin-login.html';
             return false;
         }
         return true;
