@@ -172,11 +172,44 @@
           }
 
           target.appendChild(logoutBtn);
+
+          // Force visibility if in fullscreen
+          setTimeout(() => {
+            if (
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement
+            ) {
+              forceLogoutButtonVisibility();
+            }
+          }, 100);
+
           console.log(
             `Logout button added to ${
               target === document.body ? "body" : "#preso"
             } (${isMobile ? "mobile" : "desktop"} mode)`
           );
+        }
+
+        function forceLogoutButtonVisibility() {
+          const logoutBtn = document.querySelector(".logout-btn");
+          if (logoutBtn) {
+            logoutBtn.style.position = "fixed";
+            logoutBtn.style.zIndex = "99999";
+            logoutBtn.style.display = "flex";
+            logoutBtn.style.visibility = "visible";
+            logoutBtn.style.opacity = "1";
+            logoutBtn.style.pointerEvents = "auto";
+
+            if (isMobile) {
+              logoutBtn.style.top = "70px";
+              logoutBtn.style.right = "15px";
+            } else {
+              logoutBtn.style.top = "56px";
+              logoutBtn.style.right = "10px";
+            }
+          }
         }
 
         function init() {
@@ -189,6 +222,18 @@
 
           // Periodic check
           setInterval(initLogoutButton, 3000);
+
+          // Monitor for fullscreen changes to force button visibility
+          [
+            "fullscreenchange",
+            "webkitfullscreenchange",
+            "mozfullscreenchange",
+            "msfullscreenchange",
+          ].forEach((event) => {
+            document.addEventListener(event, () => {
+              setTimeout(forceLogoutButtonVisibility, 100);
+            });
+          });
         }
 
         // Initialize same timing as fullscreen button
@@ -202,6 +247,7 @@
 
         // Export
         window.performLogout = performLogout;
+        window.forceLogoutButtonVisibility = forceLogoutButtonVisibility;
       })();
 
       // Global functions
@@ -444,6 +490,47 @@
       body .logout-btn {
         z-index: 99999 !important;
       }
+
+      /* Override any Storyline default controls in fullscreen */
+      .storyline-fullscreen .storyline-player-controls,
+      .storyline-fullscreen .storyline-settings-button,
+      .storyline-fullscreen [role="button"][aria-label*="Settings"],
+      .storyline-fullscreen [role="button"][aria-label*="Menu"],
+      .storyline-fullscreen .cs-button:not(.storyline-fs-btn):not(.logout-btn),
+      .storyline-fullscreen .storyline-menu-button {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /* Force our custom buttons to always be visible */
+      .storyline-fs-btn,
+      .logout-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* Specific overrides for fullscreen mode */
+      .storyline-fullscreen .storyline-fs-btn,
+      .storyline-fullscreen .logout-btn {
+        position: fixed !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* Ensure our buttons win over any inline styles */
+      [class*="storyline-fs-btn"],
+      [class*="logout-btn"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
     </style>
 
     <script>
@@ -531,16 +618,66 @@
             container.classList.toggle("storyline-fullscreen", isFS);
           }
 
-          // Force button visibility on mobile in fullscreen
-          if (isMobile && btn) {
-            if (isFS) {
-              btn.style.position = "fixed";
-              btn.style.zIndex = "99999";
-              btn.style.display = "flex";
-              btn.style.visibility = "visible";
-              btn.style.opacity = "1";
+          // Force both buttons to stay visible in fullscreen
+          setTimeout(() => {
+            forceButtonVisibility();
+          }, 100);
+        }
+
+        function forceButtonVisibility() {
+          // Force fullscreen button visibility
+          if (btn) {
+            btn.style.position = "fixed";
+            btn.style.zIndex = "99999";
+            btn.style.display = "flex";
+            btn.style.visibility = "visible";
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+
+            if (isMobile) {
+              btn.style.top = "15px";
+              btn.style.right = "15px";
+            } else {
+              btn.style.top = "10px";
+              btn.style.right = "10px";
             }
           }
+
+          // Force logout button visibility using global function
+          if (window.forceLogoutButtonVisibility) {
+            window.forceLogoutButtonVisibility();
+          }
+
+          // Hide any conflicting Storyline UI elements
+          hideStorylineControls();
+        }
+
+        function hideStorylineControls() {
+          // Hide default Storyline fullscreen controls that might conflict
+          const selectors = [
+            ".storyline-player-controls",
+            ".storyline-settings-button",
+            '[role="button"][aria-label*="Settings"]',
+            '[role="button"][aria-label*="Menu"]',
+            ".cs-button",
+            ".storyline-menu-button",
+          ];
+
+          selectors.forEach((selector) => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach((el) => {
+              if (
+                el &&
+                !el.classList.contains("storyline-fs-btn") &&
+                !el.classList.contains("logout-btn")
+              ) {
+                el.style.display = "none";
+                el.style.visibility = "hidden";
+                el.style.opacity = "0";
+                el.style.pointerEvents = "none";
+              }
+            });
+          });
         }
 
         function init() {
@@ -562,6 +699,27 @@
             target.appendChild(btn);
             updateIcon();
           }
+
+          // Monitor for changes that might hide our buttons
+          const observer = new MutationObserver(() => {
+            if (isFS) {
+              setTimeout(forceButtonVisibility, 50);
+            }
+          });
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style", "class"],
+          });
+
+          // Periodic check to ensure buttons stay visible in fullscreen
+          setInterval(() => {
+            if (isFS) {
+              forceButtonVisibility();
+            }
+          }, 1000);
         }
 
         [
