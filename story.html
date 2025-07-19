@@ -100,6 +100,7 @@
     </script>
 
     <!-- Logout System -->
+    <!-- Ganti bagian script Logout System dengan yang ini -->
     <script>
       (function () {
         "use strict";
@@ -113,10 +114,10 @@
           button.setAttribute("aria-label", "Logout dari sistem");
           button.setAttribute("title", "Logout dari sistem");
           button.innerHTML = `
-            <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        `;
+        <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    `;
           button.addEventListener("click", performLogout);
           return button;
         }
@@ -173,17 +174,11 @@
 
           target.appendChild(logoutBtn);
 
-          // Force visibility if in fullscreen
-          setTimeout(() => {
-            if (
-              document.fullscreenElement ||
-              document.webkitFullscreenElement ||
-              document.mozFullScreenElement ||
-              document.msFullscreenElement
-            ) {
-              forceLogoutButtonVisibility();
-            }
-          }, 100);
+          // PERBAIKAN: Multiple force visibility dengan delay berbeda
+          setTimeout(() => forceLogoutButtonVisibility(), 50);
+          setTimeout(() => forceLogoutButtonVisibility(), 200);
+          setTimeout(() => forceLogoutButtonVisibility(), 500);
+          setTimeout(() => forceLogoutButtonVisibility(), 1000);
 
           console.log(
             `Logout button added to ${
@@ -215,15 +210,25 @@
         function init() {
           initLogoutButton();
 
-          // Monitor changes like fullscreen button does
+          // Monitor changes
           window.addEventListener("hashchange", () => {
             setTimeout(initLogoutButton, 100);
           });
 
-          // Periodic check
-          setInterval(initLogoutButton, 3000);
+          // PERBAIKAN: Interval check lebih sering untuk pertama kali
+          let checkCount = 0;
+          const intervalId = setInterval(() => {
+            initLogoutButton();
+            checkCount++;
 
-          // Monitor for fullscreen changes to force button visibility
+            // Setelah 10 kali check (30 detik), kurangi frekuensi
+            if (checkCount >= 10) {
+              clearInterval(intervalId);
+              setInterval(initLogoutButton, 5000); // Check setiap 5 detik
+            }
+          }, 1000); // Check setiap 1 detik untuk 30 detik pertama
+
+          // Monitor untuk fullscreen changes
           [
             "fullscreenchange",
             "webkitfullscreenchange",
@@ -231,50 +236,43 @@
             "msfullscreenchange",
           ].forEach((event) => {
             document.addEventListener(event, () => {
-              setTimeout(forceLogoutButtonVisibility, 100);
+              // PERBAIKAN: Multiple force dengan delay berbeda
+              setTimeout(forceLogoutButtonVisibility, 50);
+              setTimeout(forceLogoutButtonVisibility, 200);
+              setTimeout(forceLogoutButtonVisibility, 500);
+              setTimeout(forceLogoutButtonVisibility, 1000);
             });
           });
-        }
 
-        // Initialize same timing as fullscreen button
-        // Multiple initialization strategies for different loading states
-        function initWithRetry() {
-          // Try immediate init
-          init();
-
-          // Backup init after delays (for slow loading)
-          setTimeout(init, 500);
-          setTimeout(init, 1000);
-          setTimeout(init, 2000);
-          setTimeout(init, 3000);
-
-          // Monitor for Storyline elements and init when ready
-          const storylineCheck = setInterval(() => {
-            const storylineElements = document.querySelectorAll(
-              '#preso, .storyline-player, [id*="storyline"]'
-            );
-            if (storylineElements.length > 0) {
-              clearInterval(storylineCheck);
-              setTimeout(init, 100);
+          // PERBAIKAN: Observer untuk perubahan DOM
+          const observer = new MutationObserver(() => {
+            if (
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement
+            ) {
+              setTimeout(forceLogoutButtonVisibility, 100);
             }
-          }, 200);
-
-          // Clear check after 10 seconds
-          setTimeout(() => clearInterval(storylineCheck), 10000);
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(initWithRetry, 100);
           });
-        } else {
-          initWithRetry();
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style", "class"],
+          });
         }
 
-        // Additional window load event for complete safety
-        window.addEventListener("load", () => {
-          setTimeout(init, 500);
-        });
+        // PERBAIKAN: Delay inisialisasi lebih pendek
+        if (document.readyState === "loading") {
+          document.addEventListener(
+            "DOMContentLoaded",
+            () => setTimeout(init, 100) // Dari 300ms ke 100ms
+          );
+        } else {
+          setTimeout(init, 100); // Dari 300ms ke 100ms
+        }
 
         // Export
         window.performLogout = performLogout;
@@ -562,188 +560,10 @@
         visibility: visible !important;
         opacity: 1 !important;
       }
-
-      /* Emergency CSS - Force buttons visible during fullscreen regardless of loading state */
-      html:fullscreen .storyline-fs-btn,
-      html:-webkit-full-screen .storyline-fs-btn,
-      html:-moz-full-screen .storyline-fs-btn,
-      html:fullscreen .logout-btn,
-      html:-webkit-full-screen .logout-btn,
-      html:-moz-full-screen .logout-btn {
-        position: fixed !important;
-        z-index: 99999 !important;
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-      }
-
-      /* Mobile emergency positioning */
-      @media (max-width: 768px) {
-        html:fullscreen .storyline-fs-btn,
-        html:-webkit-full-screen .storyline-fs-btn,
-        html:-moz-full-screen .storyline-fs-btn {
-          top: 15px !important;
-          right: 15px !important;
-          width: 44px !important;
-          height: 44px !important;
-        }
-
-        html:fullscreen .logout-btn,
-        html:-webkit-full-screen .logout-btn,
-        html:-moz-full-screen .logout-btn {
-          top: 70px !important;
-          right: 15px !important;
-          width: 44px !important;
-          height: 44px !important;
-        }
-      }
-
-      /* Desktop emergency positioning */
-      @media (min-width: 769px) {
-        html:fullscreen .storyline-fs-btn,
-        html:-webkit-full-screen .storyline-fs-btn,
-        html:-moz-full-screen .storyline-fs-btn {
-          top: 10px !important;
-          right: 10px !important;
-          width: 36px !important;
-          height: 36px !important;
-        }
-
-        html:fullscreen .logout-btn,
-        html:-webkit-full-screen .logout-btn,
-        html:-moz-full-screen .logout-btn {
-          top: 56px !important;
-          right: 10px !important;
-          width: 36px !important;
-          height: 36px !important;
-        }
-      }
     </style>
 
     <script>
       window.THREE = {};
-    </script>
-
-    <!-- Global Fullscreen Monitor - Runs immediately -->
-    <script>
-      (function () {
-        "use strict";
-
-        let globalFullscreenState = false;
-        const isMobile = window.innerWidth <= 768;
-
-        // Global function to force both buttons visible
-        function globalForceButtonsVisible() {
-          // Force any existing fullscreen button
-          const fsBtn = document.querySelector(".storyline-fs-btn");
-          if (fsBtn) {
-            fsBtn.style.position = "fixed";
-            fsBtn.style.zIndex = "99999";
-            fsBtn.style.display = "flex";
-            fsBtn.style.visibility = "visible";
-            fsBtn.style.opacity = "1";
-            fsBtn.style.pointerEvents = "auto";
-
-            if (isMobile) {
-              fsBtn.style.top = "15px";
-              fsBtn.style.right = "15px";
-            } else {
-              fsBtn.style.top = "10px";
-              fsBtn.style.right = "10px";
-            }
-          }
-
-          // Force any existing logout button
-          const logoutBtn = document.querySelector(".logout-btn");
-          if (logoutBtn) {
-            logoutBtn.style.position = "fixed";
-            logoutBtn.style.zIndex = "99999";
-            logoutBtn.style.display = "flex";
-            logoutBtn.style.visibility = "visible";
-            logoutBtn.style.opacity = "1";
-            logoutBtn.style.pointerEvents = "auto";
-
-            if (isMobile) {
-              logoutBtn.style.top = "70px";
-              logoutBtn.style.right = "15px";
-            } else {
-              logoutBtn.style.top = "56px";
-              logoutBtn.style.right = "10px";
-            }
-          }
-
-          // Hide conflicting elements
-          const conflictSelectors = [
-            ".storyline-player-controls",
-            ".storyline-settings-button",
-            '[role="button"][aria-label*="Settings"]',
-            '[role="button"][aria-label*="Menu"]',
-            ".cs-button:not(.storyline-fs-btn):not(.logout-btn)",
-            ".storyline-menu-button",
-          ];
-
-          conflictSelectors.forEach((selector) => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach((el) => {
-              if (
-                el &&
-                !el.classList.contains("storyline-fs-btn") &&
-                !el.classList.contains("logout-btn")
-              ) {
-                el.style.display = "none";
-                el.style.visibility = "hidden";
-                el.style.opacity = "0";
-                el.style.pointerEvents = "none";
-              }
-            });
-          });
-        }
-
-        // Monitor fullscreen state changes
-        function checkFullscreenState() {
-          const isFS = !!(
-            document.fullscreenElement ||
-            document.webkitFullscreenElement ||
-            document.mozFullScreenElement ||
-            document.msFullscreenElement
-          );
-
-          if (isFS !== globalFullscreenState) {
-            globalFullscreenState = isFS;
-            if (isFS) {
-              // Force buttons visible immediately when entering fullscreen
-              globalForceButtonsVisible();
-              // Continue forcing every 100ms for first 5 seconds
-              let forceCount = 0;
-              const forceInterval = setInterval(() => {
-                globalForceButtonsVisible();
-                forceCount++;
-                if (forceCount >= 50) {
-                  // 50 * 100ms = 5 seconds
-                  clearInterval(forceInterval);
-                }
-              }, 100);
-            }
-          }
-        }
-
-        // Set up event listeners immediately
-        [
-          "fullscreenchange",
-          "webkitfullscreenchange",
-          "mozfullscreenchange",
-          "msfullscreenchange",
-        ].forEach((event) => {
-          document.addEventListener(event, checkFullscreenState);
-        });
-
-        // Continuous monitoring every 500ms
-        setInterval(checkFullscreenState, 500);
-
-        // Export to global scope
-        window.globalForceButtonsVisible = globalForceButtonsVisible;
-      })();
     </script>
 
     <!-- Fullscreen Script -->
@@ -828,30 +648,9 @@
           }
 
           // Force both buttons to stay visible in fullscreen
-          if (isFS) {
-            // Use global function if available
-            if (window.globalForceButtonsVisible) {
-              window.globalForceButtonsVisible();
-            }
-            // Also use local function as backup
-            setTimeout(() => {
-              forceButtonVisibility();
-            }, 100);
-
-            // Continue forcing for a few seconds to handle slow initialization
-            let attempts = 0;
-            const forceInterval = setInterval(() => {
-              forceButtonVisibility();
-              if (window.globalForceButtonsVisible) {
-                window.globalForceButtonsVisible();
-              }
-              attempts++;
-              if (attempts >= 30) {
-                // 30 * 200ms = 6 seconds
-                clearInterval(forceInterval);
-              }
-            }, 200);
-          }
+          setTimeout(() => {
+            forceButtonVisibility();
+          }, 100);
         }
 
         function forceButtonVisibility() {
@@ -876,25 +675,6 @@
           // Force logout button visibility using global function
           if (window.forceLogoutButtonVisibility) {
             window.forceLogoutButtonVisibility();
-          }
-
-          // Also try direct method in case global function not ready
-          const logoutBtn = document.querySelector(".logout-btn");
-          if (logoutBtn) {
-            logoutBtn.style.position = "fixed";
-            logoutBtn.style.zIndex = "99999";
-            logoutBtn.style.display = "flex";
-            logoutBtn.style.visibility = "visible";
-            logoutBtn.style.opacity = "1";
-            logoutBtn.style.pointerEvents = "auto";
-
-            if (isMobile) {
-              logoutBtn.style.top = "70px";
-              logoutBtn.style.right = "15px";
-            } else {
-              logoutBtn.style.top = "56px";
-              logoutBtn.style.right = "10px";
-            }
           }
 
           // Hide any conflicting Storyline UI elements
@@ -1099,118 +879,6 @@
 
     <div id="focus-sink" tabindex="-1"></div>
     <div id="preso"></div>
-
-    <!-- Early Button Injection - Runs as soon as body is available -->
-    <script>
-      (function () {
-        "use strict";
-
-        const isMobile = window.innerWidth <= 768;
-
-        // Early button creation and injection
-        function injectButtonsEarly() {
-          // Only inject if buttons don't exist yet
-          if (
-            document.querySelector(".storyline-fs-btn") ||
-            document.querySelector(".logout-btn")
-          ) {
-            return;
-          }
-
-          // Create fullscreen button early
-          const fsBtn = document.createElement("button");
-          fsBtn.className = "storyline-fs-btn";
-          fsBtn.innerHTML = `
-            <svg class="storyline-fs-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-            </svg>
-          `;
-
-          // Create logout button early (if user is logged in)
-          const logoutBtn = document.createElement("button");
-          logoutBtn.className = "logout-btn";
-          logoutBtn.innerHTML = `
-            <svg class="logout-icon" viewBox="0 0 24 24" fill="none">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          `;
-
-          // Style buttons immediately
-          [fsBtn, logoutBtn].forEach((btn) => {
-            btn.style.position = "fixed";
-            btn.style.zIndex = "99999";
-            btn.style.display = "flex";
-            btn.style.alignItems = "center";
-            btn.style.justifyContent = "center";
-            btn.style.border = "none";
-            btn.style.borderRadius = "6px";
-            btn.style.cursor = "pointer";
-            btn.style.transition = "all 0.3s ease";
-            btn.style.outline = "none";
-            btn.style.visibility = "visible";
-            btn.style.opacity = "1";
-            btn.style.pointerEvents = "auto";
-          });
-
-          // Position fullscreen button
-          if (isMobile) {
-            fsBtn.style.top = "15px";
-            fsBtn.style.right = "15px";
-            fsBtn.style.width = "44px";
-            fsBtn.style.height = "44px";
-          } else {
-            fsBtn.style.top = "10px";
-            fsBtn.style.right = "10px";
-            fsBtn.style.width = "36px";
-            fsBtn.style.height = "36px";
-          }
-
-          // Position logout button
-          if (isMobile) {
-            logoutBtn.style.top = "70px";
-            logoutBtn.style.right = "15px";
-            logoutBtn.style.width = "44px";
-            logoutBtn.style.height = "44px";
-          } else {
-            logoutBtn.style.top = "56px";
-            logoutBtn.style.right = "10px";
-            logoutBtn.style.width = "36px";
-            logoutBtn.style.height = "36px";
-          }
-
-          // Style specific to each button
-          fsBtn.style.background = "rgba(44, 62, 80, 0.9)";
-          fsBtn.style.color = "white";
-
-          logoutBtn.style.background =
-            "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
-          logoutBtn.style.color = "white";
-
-          // Inject to body immediately
-          document.body.appendChild(fsBtn);
-
-          // Only show logout if user is logged in
-          if (sessionStorage.getItem("currentUser")) {
-            document.body.appendChild(logoutBtn);
-          }
-
-          console.log("Early buttons injected");
-        }
-
-        // Try to inject as soon as possible
-        if (document.body) {
-          injectButtonsEarly();
-        } else {
-          // Wait for body to be available
-          const bodyCheck = setInterval(() => {
-            if (document.body) {
-              clearInterval(bodyCheck);
-              injectButtonsEarly();
-            }
-          }, 10);
-        }
-      })();
-    </script>
 
     <script>
       window.DS = {};
