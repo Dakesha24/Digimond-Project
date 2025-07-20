@@ -557,8 +557,13 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive Design */
@@ -567,32 +572,32 @@
         transform: translateX(-100%);
         transition: var(--admin-transition);
     }
-    
+
     .admin-sidebar.show {
         transform: translateX(0);
     }
-    
+
     .admin-main {
         margin-left: 0;
     }
-    
+
     .admin-content {
         padding: 1rem;
     }
-    
+
     .admin-login-card {
         padding: 2rem 1.5rem;
         margin: 1rem;
     }
-    
+
     .hero-title {
         font-size: 2rem;
     }
-    
+
     .hero-features {
         gap: 1rem;
     }
-    
+
     .stats-number {
         font-size: 2rem;
     }
@@ -652,6 +657,7 @@
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -864,73 +870,77 @@
     margin: 0;
     font-size: 0.9rem;
 }
+
 /* Membuat tabel bisa di-scroll horizontal di layar kecil */
 .admin-table {
-display: block;
-width: 100%;
-overflow-x: auto; /* Kunci utama untuk tabel responsif */
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    /* Kunci utama untuk tabel responsif */
 }
 
 /* Terapkan aturan ini untuk layar dengan lebar maksimal 768px (tablet/HP) */
 @media (max-width: 768px) {
-/* Sembunyikan sidebar dan topbar agar tidak mengganggu */
-.admin-sidebar,
-.admin-topbar .admin-user-info {
-display: none;
-}
-/* Ubah judul agar di tengah dan beri ruang */
-.admin-topbar {
-justify-content: center;
-padding: 1rem;
-}
 
-/* Atur ulang konten utama agar mengisi seluruh layar */
-.admin-main {
-margin-left: 0;
- width: 100%;
- }
+    /* Sembunyikan sidebar dan topbar agar tidak mengganggu */
+    .admin-topbar .admin-user-info {
+        display: none;
+    }
 
-/* Beri sedikit padding pada konten agar tidak menempel di tepi layar */
-.admin-content {
-padding: 1rem;
-}
+    /* Ubah judul agar di tengah dan beri ruang */
+    .admin-topbar {
+        justify-content: center;
+        padding: 1rem;
+    }
 
-/* Pastikan kolom statistik mengisi lebar penuh */
-.stats-card {
-margin-bottom: 1rem;
-}
+    /* Atur ulang konten utama agar mengisi seluruh layar */
+    .admin-main {
+        margin-left: 0;
+        width: 100%;
+    }
 
-/* Atur ulang tombol agar tidak terlalu besar di HP */
-.card-header-custom {
-flex-direction: column;
-align-items: flex-start;
-gap: 0.5rem;
-}
+    /* Beri sedikit padding pada konten agar tidak menempel di tepi layar */
+    .admin-content {
+        padding: 1rem;
+    }
+
+    /* Pastikan kolom statistik mengisi lebar penuh */
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+
+    /* Atur ulang tombol agar tidak terlalu besar di HP */
+    .card-header-custom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
 }
 
 .admin-table {
-  display: block;
-  width: 100%;
-  overflow-x: auto;
+    display: block;
+    width: 100%;
+    overflow-x: auto;
 }
 
 /* Tombol toggle sidebar disembunyikan di desktop */
 #sidebarToggle {
-  display: none;
+    display: none;
 }
 
 /* Overlay untuk latar belakang gelap saat sidebar terbuka di mobile */
 .sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  /* KUNCI 1: z-index harus di bawah sidebar */
-  z-index: 999; 
-  display: none; /* Sembunyi secara default */
-  transition: opacity 0.3s ease-in-out;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* KUNCI 1: z-index harus di bawah sidebar */
+    z-index: 999;
+    display: none;
+    /* Sembunyi secara default */
+    transition: opacity 0.3s ease-in-out;
 }
 
 .sidebar-overlay.show {
@@ -940,72 +950,126 @@ gap: 0.5rem;
 
 /* Terapkan aturan ini untuk layar dengan lebar di bawah 992px (tablet dan HP) */
 @media (max-width: 992px) {
-  
-  /* Tampilkan tombol hamburger */
-  #sidebarToggle {
-    display: block;
-    margin-right: 1rem; /* Beri sedikit jarak */
-  }
 
-  /* Geser sidebar ke luar layar */
-  .admin-sidebar {
-    /* KUNCI 1: Pastikan z-index lebih tinggi dari overlay */
-    z-index: 1001; 
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-  }
+    /* Tampilkan tombol hamburger */
+    #sidebarToggle {
+        display: block;
+        margin-right: 1rem;
+        /* Beri sedikit jarak */
+    }
 
-  /* Jika sidebar punya class "show", tampilkan ke layar */
-  .admin-sidebar.show {
-    transform: translateX(0);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
-  }
-  
-  /* Konten utama mengisi seluruh layar */
-  .admin-main {
-    margin-left: 0;
-  }
+    /* Geser sidebar ke luar layar */
+    .admin-sidebar {
+        /* KUNCI 1: Pastikan z-index lebih tinggi dari overlay */
+        z-index: 1001;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
 
-  /* Atur topbar agar lebih rapi */
-  .admin-topbar {
-    padding: 0.75rem 1rem;
-  }
+    /* Jika sidebar punya class "show", tampilkan ke layar */
+    .admin-sidebar.show {
+        transform: translateX(0);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+    }
 
-  /* KUNCI 2: Sembunyikan teks "Admin" dan "Administrator", tapi JANGAN sembunyikan seluruh bloknya */
-  .admin-user-info > div:not(.user-avatar):not(.dropdown) {
-    display: none;
-  }
-  
-  .topbar-title {
-      font-size: 1.2rem; /* Kecilkan judul sedikit */
-  }
+    /* Konten utama mengisi seluruh layar */
+    .admin-main {
+        margin-left: 0;
+    }
 
-  /* Atur ulang tombol aksi di tabel agar lebih rapi di HP */
-  .admin-table .btn-action {
-    margin-bottom: 0.5rem;
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
-  .admin-table .btn-action:last-child {
-    margin-bottom: 0;
-  }
+    /* Atur topbar agar lebih rapi */
+    .admin-topbar {
+        padding: 0.75rem 1rem;
+    }
+
+    /* Sembunyikan hanya teks info, bukan dropdown */
+    .admin-user-info {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+
+    /* Pastikan dropdown tetap terlihat */
+    .admin-user-info .dropdown {
+        display: block !important;
+    }
+
+    /* Atur posisi dropdown agar tidak terpotong */
+    .admin-user-info .dropdown-menu {
+        right: 0;
+        left: auto;
+    }
+
+    .topbar-title {
+        font-size: 1.2rem;
+        /* Kecilkan judul sedikit */
+    }
+
+    /* Atur ulang tombol aksi di tabel agar lebih rapi di HP */
+    .admin-table .btn-action {
+        margin-bottom: 0.5rem;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .admin-table .btn-action:last-child {
+        margin-bottom: 0;
+    }
+
+    .admin-user-info {
+        min-width: 80px;
+        justify-content: flex-end;
+    }
+
+    /* Atur dropdown button agar tidak terlalu kecil */
+    .admin-user-info .dropdown .btn {
+        padding: 0.5rem;
+    }
 }
 
 
 /* Utilities */
-.text-admin-primary { color: var(--admin-primary); }
-.text-admin-secondary { color: var(--admin-secondary); }
-.text-admin-success { color: var(--admin-success); }
-.text-admin-danger { color: var(--admin-danger); }
-.text-admin-warning { color: var(--admin-warning); }
-.text-admin-info { color: var(--admin-info); }
+.text-admin-primary {
+    color: var(--admin-primary);
+}
 
-.bg-admin-primary { background-color: var(--admin-primary); }
-.bg-admin-light { background-color: var(--admin-light); }
+.text-admin-secondary {
+    color: var(--admin-secondary);
+}
 
-.border-admin-primary { border-color: var(--admin-primary); }
+.text-admin-success {
+    color: var(--admin-success);
+}
 
-.shadow-admin { box-shadow: var(--admin-shadow); }
-.shadow-admin-lg { box-shadow: var(--admin-shadow-lg); }
+.text-admin-danger {
+    color: var(--admin-danger);
+}
 
+.text-admin-warning {
+    color: var(--admin-warning);
+}
+
+.text-admin-info {
+    color: var(--admin-info);
+}
+
+.bg-admin-primary {
+    background-color: var(--admin-primary);
+}
+
+.bg-admin-light {
+    background-color: var(--admin-light);
+}
+
+.border-admin-primary {
+    border-color: var(--admin-primary);
+}
+
+.shadow-admin {
+    box-shadow: var(--admin-shadow);
+}
+
+.shadow-admin-lg {
+    box-shadow: var(--admin-shadow-lg);
+}
