@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Digimod Vektars</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -13,188 +17,381 @@
       }
 
       body {
-        font-family: "Arial", sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0c0c0c 0%,
+          #1a1a2e 25%,
+          #16213e 50%,
+          #0f3460 75%,
+          #533483 100%
+        );
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 20px;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 50%,
+            rgba(120, 119, 198, 0.3) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 20%,
+            rgba(255, 119, 198, 0.3) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 40% 80%,
+            rgba(120, 219, 255, 0.4) 0%,
+            transparent 50%
+          );
+        animation: float 8s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(1deg);
+        }
       }
 
       .auth-container {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
         overflow: hidden;
         width: 100%;
-        max-width: 450px;
+        max-width: 420px;
         position: relative;
+        z-index: 1;
+        transform: translateY(0);
+        transition: transform 0.3s ease;
+      }
+
+      .auth-container:hover {
+        transform: translateY(-5px);
+      }
+
+      .logo-section {
+        text-align: center;
+        padding: 30px 30px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .logo-placeholder {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+      }
+
+      .brand-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+      }
+
+      .brand-tagline {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 300;
       }
 
       .auth-header {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        color: white;
-        padding: 30px;
+        padding: 30px 30px 20px;
         text-align: center;
       }
 
       .auth-header h1 {
         font-size: 28px;
-        margin-bottom: 10px;
-        font-weight: 700;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .auth-header p {
-        opacity: 0.9;
+        color: rgba(255, 255, 255, 0.8);
         font-size: 16px;
+        font-weight: 300;
       }
 
       .auth-form {
-        padding: 40px 30px;
+        padding: 20px 30px 40px;
       }
 
       .form-group {
-        margin-bottom: 25px;
+        margin-bottom: 24px;
+        position: relative;
       }
 
       .form-group label {
         display: block;
         margin-bottom: 8px;
-        font-weight: 600;
-        color: #374151;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
         font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       .form-group input {
         width: 100%;
-        padding: 15px;
-        border: 2px solid #e5e7eb;
-        border-radius: 12px;
+        padding: 16px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
         font-size: 16px;
+        font-weight: 400;
         transition: all 0.3s ease;
-        background: #f9fafb;
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        backdrop-filter: blur(10px);
+      }
+
+      .form-group input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
       }
 
       .form-group input:focus {
         outline: none;
-        border-color: #4f46e5;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        border-color: rgba(102, 126, 234, 0.8);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2),
+          0 4px 16px rgba(102, 126, 234, 0.2);
+        transform: translateY(-2px);
       }
 
       .btn {
         width: 100%;
-        padding: 15px;
+        padding: 16px;
         border: none;
-        border-radius: 12px;
+        border-radius: 16px;
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
         text-transform: uppercase;
         letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .btn:hover::before {
+        left: 100%;
       }
 
       .btn-primary {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
       }
 
       .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
       }
 
       .btn-secondary {
-        background: transparent;
-        color: #4f46e5;
-        border: 2px solid #4f46e5;
-        margin-top: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-top: 16px;
+        backdrop-filter: blur(10px);
       }
 
       .btn-secondary:hover {
-        background: #4f46e5;
-        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
       }
 
       .toggle-form {
         text-align: center;
-        margin-top: 25px;
-        padding-top: 25px;
-        border-top: 1px solid #e5e7eb;
+        margin-top: 30px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .toggle-form p {
-        color: #6b7280;
-        margin-bottom: 10px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 12px;
+        font-weight: 300;
       }
 
       .toggle-form button {
         background: none;
         border: none;
-        color: #4f46e5;
+        color: #667eea;
         cursor: pointer;
         font-weight: 600;
-        text-decoration: underline;
+        text-decoration: none;
+        position: relative;
+        transition: color 0.3s ease;
+      }
+
+      .toggle-form button::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: #667eea;
+        transition: width 0.3s ease;
+      }
+
+      .toggle-form button:hover::after {
+        width: 100%;
+      }
+
+      .error-message,
+      .success-message {
+        padding: 14px 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
       }
 
       .error-message {
-        background: #fef2f2;
-        color: #dc2626;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border: 1px solid #fecaca;
-        font-size: 14px;
+        background: rgba(220, 38, 38, 0.1);
+        color: #fca5a5;
+        border: 1px solid rgba(220, 38, 38, 0.3);
       }
 
       .success-message {
-        background: #f0fdf4;
-        color: #16a34a;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border: 1px solid #bbf7d0;
-        font-size: 14px;
+        background: rgba(34, 197, 94, 0.1);
+        color: #86efac;
+        border: 1px solid rgba(34, 197, 94, 0.3);
       }
 
       .loading {
-        opacity: 0.7;
+        opacity: 0.6;
         pointer-events: none;
       }
 
       .row {
         display: flex;
-        gap: 15px;
+        gap: 16px;
       }
 
       .row .form-group {
         flex: 1;
       }
 
+      .hidden {
+        display: none;
+      }
+
       @media (max-width: 480px) {
         .auth-container {
           margin: 10px;
+          max-width: 100%;
         }
 
         .auth-form {
-          padding: 30px 20px;
+          padding: 20px 20px 30px;
+        }
+
+        .logo-section {
+          padding: 20px 20px 15px;
+        }
+
+        .auth-header {
+          padding: 20px 20px 15px;
+        }
+
+        .logo-placeholder {
+          width: 60px;
+          height: 60px;
+          font-size: 24px;
+        }
+
+        .brand-name {
+          font-size: 20px;
+        }
+
+        .auth-header h1 {
+          font-size: 24px;
         }
 
         .row {
           flex-direction: column;
           gap: 0;
         }
+
+        .form-group input {
+          padding: 14px 16px;
+        }
       }
 
-      .hidden {
-        display: none;
+      @media (max-width: 360px) {
+        body {
+          padding: 10px;
+        }
+
+        .auth-form {
+          padding: 15px 15px 25px;
+        }
       }
     </style>
   </head>
   <body>
     <div class="auth-container">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <div class="logo-placeholder">DV</div>
+        <div class="brand-name">Digimod Vektars</div>
+        <div class="brand-tagline">Digital Learning Platform</div>
+      </div>
+
+      <!-- Auth Header -->
       <div class="auth-header">
         <h1 id="auth-title">Masuk</h1>
         <p id="auth-subtitle">Masuk ke akun Anda untuk melanjutkan</p>
@@ -208,11 +405,21 @@
         <form id="login-form">
           <div class="form-group">
             <label for="login-username">Username</label>
-            <input type="text" id="login-username" required />
+            <input
+              type="text"
+              id="login-username"
+              placeholder="Masukkan username"
+              required
+            />
           </div>
           <div class="form-group">
             <label for="login-password">Password</label>
-            <input type="password" id="login-password" required />
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Masukkan password"
+              required
+            />
           </div>
           <button type="submit" class="btn btn-primary">Masuk</button>
         </form>
@@ -221,31 +428,57 @@
         <form id="register-form" class="hidden">
           <div class="form-group">
             <label for="register-nama">Nama Lengkap</label>
-            <input type="text" id="register-nama" required />
+            <input
+              type="text"
+              id="register-nama"
+              placeholder="Masukkan nama lengkap"
+              required
+            />
           </div>
           <div class="row">
             <div class="form-group">
               <label for="register-username">Username</label>
-              <input type="text" id="register-username" required />
+              <input
+                type="text"
+                id="register-username"
+                placeholder="Username"
+                required
+              />
             </div>
             <div class="form-group">
               <label for="register-kelas">Kelas</label>
-              <input type="text" id="register-kelas" required />
+              <input
+                type="text"
+                id="register-kelas"
+                placeholder="Kelas"
+                required
+              />
             </div>
           </div>
           <div class="form-group">
             <label for="register-sekolah">Asal Sekolah</label>
-            <input type="text" id="register-sekolah" required />
+            <input
+              type="text"
+              id="register-sekolah"
+              placeholder="Nama sekolah"
+              required
+            />
           </div>
           <div class="form-group">
             <label for="register-email">Email</label>
-            <input type="email" id="register-email" required />
+            <input
+              type="email"
+              id="register-email"
+              placeholder="email@example.com"
+              required
+            />
           </div>
           <div class="form-group">
             <label for="register-password">Password</label>
             <input
               type="password"
               id="register-password"
+              placeholder="Minimal 6 karakter"
               required
               minlength="6"
             />
@@ -255,6 +488,7 @@
             <input
               type="password"
               id="register-confirm-password"
+              placeholder="Ulangi password"
               required
               minlength="6"
             />
@@ -273,7 +507,7 @@
       // Konfigurasi Supabase
       const supabaseUrl = "https://jkkdlbamzokbwwygtmel.supabase.co";
       const supabaseKey =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra2RsYmFtem9rYnd3eWd0bWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjEzOTEsImV4cCI6MjA2ODI5NzM5MX0.HNGpazUiCiykLcBdW_ITKmbXFDhSlIZVLKPjUR2mgP0"; // Ganti dengan anon key Anda
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra2RsYmFtem9rYnd3eWd0bWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjEzOTEsImV4cCI6MjA2ODI5NzM5MX0.HNGpazUiCiykLcBdW_ITKmbXFDhSlIZVLKPjUR2mgP0";
       const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
       // Elements
@@ -379,9 +613,8 @@
 
           const user = data[0];
 
-          // ===== HANDLE MULTIPLE LOGIN - CEK LOGIN SEBELUMNYA =====
+          // Handle multiple login
           await handlePreviousLogin(user.id);
-          // ===== END HANDLE MULTIPLE LOGIN =====
 
           // Update last login
           await supabase
@@ -429,7 +662,6 @@
 
       async function handlePreviousLogin(userId) {
         try {
-          // Cari login terakhir yang belum ada logout-nya
           const { data: lastLogin, error: loginError } = await supabase
             .from("user_activities")
             .select("*")
@@ -446,7 +678,6 @@
           if (lastLogin && lastLogin.length > 0) {
             const lastLoginTime = lastLogin[0].created_at;
 
-            // Cek apakah ada logout setelah login terakhir
             const { data: logoutAfter, error: logoutError } = await supabase
               .from("user_activities")
               .select("created_at")
@@ -461,19 +692,16 @@
               return;
             }
 
-            // Jika tidak ada logout setelah login terakhir, berarti sesi sebelumnya belum logout
             if (!logoutAfter || logoutAfter.length === 0) {
               console.log(
                 "Detected previous login without logout - creating auto logout"
               );
 
-              // Hitung durasi dari login sebelumnya sampai sekarang
               const previousLoginTime = new Date(lastLoginTime).getTime();
               const currentTime = new Date().getTime();
               const sessionDuration = currentTime - previousLoginTime;
               const durationText = formatDurationMs(sessionDuration);
 
-              // Create auto logout untuk sesi sebelumnya
               await supabase.from("user_activities").insert([
                 {
                   user_id: userId,
@@ -482,7 +710,7 @@
                   page_url: window.location.href,
                   session_id: "auto_logout_" + Date.now(),
                   user_agent: navigator.userAgent,
-                  created_at: new Date(currentTime - 1000).toISOString(), // 1 detik sebelum login baru
+                  created_at: new Date(currentTime - 1000).toISOString(),
                 },
               ]);
 
@@ -536,7 +764,6 @@
           "register-confirm-password"
         ).value;
 
-        // Validasi
         if (password !== confirmPassword) {
           showError("Password dan konfirmasi password tidak sama");
           setLoading(registerForm, false);
@@ -550,7 +777,6 @@
         }
 
         try {
-          // Cek apakah username sudah ada
           const { data: existingUsers, error: userCheckError } = await supabase
             .from("users")
             .select("username")
@@ -569,7 +795,6 @@
             return;
           }
 
-          // Cek apakah email sudah ada
           const { data: existingEmails, error: emailCheckError } =
             await supabase.from("users").select("email").eq("email", email);
 
@@ -588,7 +813,6 @@
 
           const hashedPassword = await hashPassword(password);
 
-          // Insert user baru
           const { data, error } = await supabase
             .from("users")
             .insert([
@@ -610,7 +834,6 @@
 
           const newUser = data[0];
 
-          // Log activity
           await logActivity(
             newUser.id,
             "register",
@@ -620,7 +843,6 @@
 
           showSuccess("Pendaftaran berhasil! Silakan login dengan akun Anda.");
 
-          // Reset form dan switch ke login
           registerForm.reset();
           setTimeout(() => {
             toggleBtn.click();
@@ -633,7 +855,6 @@
         }
       });
 
-      // Log activity function
       async function logActivity(userId, activityType, description, pageUrl) {
         try {
           await supabase.from("user_activities").insert([
@@ -651,7 +872,6 @@
         }
       }
 
-      // Generate session ID
       function getSessionId() {
         let sessionId = sessionStorage.getItem("sessionId");
         if (!sessionId) {
@@ -665,7 +885,6 @@
         return sessionId;
       }
 
-      // Check if user is already logged in
       window.addEventListener("load", () => {
         const currentUser = sessionStorage.getItem("currentUser");
         if (currentUser) {
