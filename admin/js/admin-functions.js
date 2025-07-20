@@ -441,6 +441,161 @@ const DataService = {
         }
     },
 
+    // Get students who logged in on specific date
+    getStudentsByLoginDate: async function (targetDate) {
+        try {
+            console.log('📅 Getting students who logged in on:', targetDate);
+
+            // Convert target date to start and end of day
+            const startOfDay = new Date(targetDate);
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date(targetDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            console.log('🕐 Date range:', {
+                start: startOfDay.toISOString(),
+                end: endOfDay.toISOString()
+            });
+
+            // Get login activities on target date
+            const { data: loginActivities, error: loginError } = await supabaseClient
+                .from('user_activities')
+                .select(`
+                user_id,
+                created_at,
+                users!inner(
+                    id,
+                    nama_lengkap,
+                    username,
+                    asal_sekolah,
+                    kelas,
+                    email,
+                    last_login,
+                    is_active
+                )
+            `)
+                .eq('activity_type', 'login')
+                .gte('created_at', startOfDay.toISOString())
+                .lte('created_at', endOfDay.toISOString())
+                .eq('users.is_active', true)
+                .order('created_at', { ascending: false });
+
+            if (loginError) throw loginError;
+
+            console.log('📊 Login activities found:', loginActivities.length);
+
+            // Group by user (remove duplicates if user logged in multiple times)
+            const uniqueUsers = {};
+            const studentsWithLoginTime = [];
+
+            loginActivities.forEach(activity => {
+                const userId = activity.user_id;
+                if (!uniqueUsers[userId]) {
+                    uniqueUsers[userId] = true;
+                    studentsWithLoginTime.push({
+                        ...activity.users,
+                        loginTimeOnDate: activity.created_at
+                    });
+                }
+            });
+
+            console.log('👥 Unique students found:', studentsWithLoginTime.length);
+            return studentsWithLoginTime;
+
+        } catch (error) {
+            console.error('❌ Error getting students by login date:', error);
+            return [];
+        }
+    },
+
+    // Get students with averages filtered by date
+    getStudentsWithAveragesFilteredByDate: async function (targetDate = null) {
+        try {
+            if (!targetDate) {
+                // No date filter, return all students with averages
+                return await this.getAllStudentsWithAverages();
+            }
+
+            console.log('📅 Getting students with averages filtered by date:', targetDate);
+
+            // Get students who logged in on target date
+            const studentsOnDate = await this.getStudentsByLoginDate(targetDate);
+
+            if (studentsOnDate.length === 0) {
+                return [];
+            }
+
+            // Get user IDs
+            const userIds = studentsOnDate.map(student => student.id);
+
+            // Get all activities for these users to calculate averages
+            const { data: allActivities, error: activitiesError } = await supabaseClient
+                .from('user_activities')
+                .select('user_id, activity_type, created_at')
+                .in('user_id', userIds)
+                .in('activity_type', ['login', 'logout'])
+                .order('user_id, created_at');
+
+            if (activitiesError) throw activitiesError;
+
+            // Group activities by user
+            const userActivities = {};
+            allActivities.forEach(activity => {
+                const userId = activity.user_id;
+                if (!userActivities[userId]) {
+                    userActivities[userId] = [];
+                }
+                userActivities[userId].push(activity);
+            });
+
+            // Calculate averages for each student
+            const studentsWithAverages = studentsOnDate.map(student => {
+                const activities = userActivities[student.id] || [];
+                let durations = [];
+                let currentLogin = null;
+
+                activities.forEach(activity => {
+                    if (activity.activity_type === 'login') {
+                        currentLogin = activity;
+                    } else if (activity.activity_type === 'logout' && currentLogin) {
+                        const loginTime = new Date(currentLogin.created_at);
+                        const logoutTime = new Date(activity.created_at);
+                        const durationMs = logoutTime - loginTime;
+
+                        if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) {
+                            durations.push(durationMs);
+                        }
+                        currentLogin = null;
+                    }
+                });
+
+                let averageStats;
+                if (durations.length === 0) {
+                    averageStats = { averageDuration: 0, sessionCount: 0, formattedDuration: '-' };
+                } else {
+                    const averageDurationMs = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
+                    averageStats = {
+                        averageDuration: averageDurationMs,
+                        sessionCount: durations.length,
+                        formattedDuration: this.formatDuration(averageDurationMs)
+                    };
+                }
+
+                return {
+                    ...student,
+                    averageLoginDuration: averageStats
+                };
+            });
+
+            return studentsWithAverages;
+
+        } catch (error) {
+            console.error('❌ Error getting students with averages filtered by date:', error);
+            return [];
+        }
+    },
+
     // Format duration in human readable format
     formatDuration: function (milliseconds) {
         const seconds = Math.floor(milliseconds / 1000);

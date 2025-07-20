@@ -279,7 +279,7 @@
             <div class="card-body">
               <!-- Search and Filter Section -->
               <div class="row mb-4">
-                <div class="col-md-6 mb-3">
+                <div class="col-lg-4 col-md-6 mb-3">
                   <label for="searchStudent" class="form-label">
                     <i class="bi bi-search me-2"></i>Cari Siswa
                   </label>
@@ -291,7 +291,7 @@
                     onkeyup="searchStudents()"
                   />
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-lg-3 col-md-6 mb-3">
                   <label for="schoolFilter" class="form-label">
                     <i class="bi bi-building me-2"></i>Filter Sekolah
                   </label>
@@ -303,6 +303,36 @@
                     <option value="">Semua Sekolah</option>
                   </select>
                 </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                  <label for="dateFilter" class="form-label">
+                    <i class="bi bi-calendar3 me-2"></i>Filter Login Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="dateFilter"
+                    onchange="filterStudents()"
+                  />
+                </div>
+                <div class="col-lg-2 col-md-6 mb-3">
+                  <label class="form-label">&nbsp;</label>
+                  <div class="d-grid">
+                    <button
+                      class="btn btn-outline-secondary"
+                      onclick="resetFilters()"
+                    >
+                      <i class="bi bi-arrow-clockwise me-2"></i>Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                id="filterInfo"
+                class="alert alert-info"
+                style="display: none"
+              >
+                <i class="bi bi-info-circle me-2"></i>
+                <span id="filterInfoText">Menampilkan semua siswa</span>
               </div>
 
               <!-- Students Table -->
@@ -728,9 +758,12 @@
       async function loadStudents() {
         try {
           AdminUI.showLoading();
+
+          // Load all students with averages (without date filter initially)
           allStudents = await DataService.getAllStudentsWithAverages();
 
           displayStudents(allStudents);
+          updateFilterInfo();
         } catch (error) {
           console.error("Error loading students:", error);
           AdminUI.showAlert("Gagal memuat data siswa", "danger");
@@ -837,35 +870,125 @@
       }
 
       function searchStudents() {
-        const searchTerm = document
-          .getElementById("searchStudent")
-          .value.toLowerCase();
-        const schoolFilter = document.getElementById("schoolFilter").value;
+        filterStudents(); // Reuse filterStudents function
+      }
+      async function filterStudents() {
+        try {
+          const searchTerm = document
+            .getElementById("searchStudent")
+            .value.toLowerCase();
+          const schoolFilter = document.getElementById("schoolFilter").value;
+          const dateFilter = document.getElementById("dateFilter").value;
 
-        let filteredStudents = allStudents;
+          let filteredStudents = allStudents;
+          if (dateFilter) {
+            AdminUI.showLoading();
+            console.log("📅 Filtering by date:", dateFilter);
 
-        // Apply school filter
-        if (schoolFilter) {
-          filteredStudents = filteredStudents.filter(
-            (student) => student.asal_sekolah === schoolFilter
+            // Get students who logged in on selected date
+            filteredStudents =
+              await DataService.getStudentsWithAveragesFilteredByDate(
+                dateFilter
+              );
+
+            AdminUI.hideLoading();
+
+            if (filteredStudents.length === 0) {
+              document.getElementById("studentsTable").innerHTML =
+                '<div class="text-center py-4"><i class="bi bi-calendar-x fs-1 text-muted"></i><p class="text-muted mt-2">Tidak ada siswa yang login pada tanggal ini</p></div>';
+              updateFilterInfo(
+                filteredStudents.length,
+                dateFilter,
+                schoolFilter,
+                searchTerm
+              );
+              return;
+            }
+          }
+
+          // Apply school filter
+          if (schoolFilter) {
+            filteredStudents = filteredStudents.filter(
+              (student) => student.asal_sekolah === schoolFilter
+            );
+          }
+
+          // Apply search filter
+          if (searchTerm) {
+            filteredStudents = filteredStudents.filter(
+              (student) =>
+                student.nama_lengkap.toLowerCase().includes(searchTerm) ||
+                student.username.toLowerCase().includes(searchTerm) ||
+                student.email.toLowerCase().includes(searchTerm)
+            );
+          }
+
+          displayStudents(filteredStudents);
+          updateFilterInfo(
+            filteredStudents.length,
+            dateFilter,
+            schoolFilter,
+            searchTerm
           );
+        } catch (error) {
+          console.error("Error filtering students:", error);
+          AdminUI.showAlert("Gagal melakukan filter", "danger");
+          AdminUI.hideLoading();
         }
-
-        // Apply search filter
-        if (searchTerm) {
-          filteredStudents = filteredStudents.filter(
-            (student) =>
-              student.nama_lengkap.toLowerCase().includes(searchTerm) ||
-              student.username.toLowerCase().includes(searchTerm) ||
-              student.email.toLowerCase().includes(searchTerm)
-          );
-        }
-
-        displayStudents(filteredStudents);
       }
 
-      function filterStudents() {
-        searchStudents(); // Reuse search function with filters
+      function resetFilters() {
+        // Clear all filters
+        document.getElementById("searchStudent").value = "";
+        document.getElementById("schoolFilter").value = "";
+        document.getElementById("dateFilter").value = "";
+
+        // Reload all students
+        displayStudents(allStudents);
+        updateFilterInfo();
+      }
+
+      function updateFilterInfo(
+        count = null,
+        dateFilter = "",
+        schoolFilter = "",
+        searchTerm = ""
+      ) {
+        const filterInfo = document.getElementById("filterInfo");
+        const filterInfoText = document.getElementById("filterInfoText");
+
+        const totalCount = count !== null ? count : allStudents.length;
+        const isFiltered = dateFilter || schoolFilter || searchTerm;
+
+        if (!isFiltered) {
+          filterInfo.style.display = "none";
+          return;
+        }
+
+        let infoText = `Menampilkan ${totalCount} siswa`;
+
+        const filters = [];
+        if (dateFilter) {
+          const dateObj = new Date(dateFilter);
+          const formattedDate = dateObj.toLocaleDateString("id-ID", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          filters.push(`login pada ${formattedDate}`);
+        }
+        if (schoolFilter) filters.push(`dari ${schoolFilter}`);
+        if (searchTerm) filters.push(`pencarian "${searchTerm}"`);
+
+        if (filters.length > 0) {
+          infoText += ` dengan filter: ${filters.join(", ")}`;
+        }
+
+        filterInfoText.textContent = infoText;
+        filterInfo.style.display = "block";
+        filterInfo.className =
+          totalCount > 0 ? "alert alert-info" : "alert alert-warning";
       }
 
       function showAddStudentModal() {
