@@ -15,6 +15,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="html5/data/js/supabase-config.js"></script>
 
+    <script>
+      // Manual Supabase Init untuk story.html
+      window.supabaseClient = window.supabase.createClient(
+        "https://jkkdlbamzokbwwygtmel.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra2RsYmFtem9rYnd3eWd0bWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjEzOTEsImV4cCI6MjA2ODI5NzM5MX0.HNGpazUiCiykLcBdW_ITKmbXFDhSlIZVLKPjUR2mgP0"
+      );
+      console.log("✅ Supabase client initialized for story.html");
+    </script>
+
     <!-- Auth Guard -->
     <script>
       (function () {
@@ -121,22 +130,58 @@
           return button;
         }
 
-        function performLogout() {
+        async function performLogout() {
           if (!confirm("Yakin ingin keluar dari sistem?")) return;
 
-          const user = JSON.parse(
-            sessionStorage.getItem("currentUser") || "{}"
-          );
-          if (user.id && window.AuthService) {
-            window.AuthService.logActivity(
-              user.id,
-              "logout",
-              "User logged out"
-            );
-          }
+          try {
+            // Show loading state
+            const logoutBtn = document.querySelector(".logout-btn");
+            if (logoutBtn) {
+              logoutBtn.innerHTML =
+                '<svg class="logout-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+              logoutBtn.style.opacity = "0.7";
+              logoutBtn.disabled = true;
+            }
 
-          sessionStorage.clear();
-          window.location.href = "story.html";
+            const user = JSON.parse(
+              sessionStorage.getItem("currentUser") || "{}"
+            );
+
+            if (user.id) {
+              // Pastikan supabaseClient ready
+              if (!window.supabaseClient) {
+                window.supabaseClient = window.supabase.createClient(
+                  "https://jkkdlbamzokbwwygtmel.supabase.co",
+                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra2RsYmFtem9rYnd3eWd0bWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjEzOTEsImV4cCI6MjA2ODI5NzM5MX0.HNGpazUiCiykLcBdW_ITKmbXFDhSlIZVLKPjUR2mgP0"
+                );
+              }
+
+              // AWAIT logout activity sampai selesai
+              await window.supabaseClient.from("user_activities").insert([
+                {
+                  user_id: user.id,
+                  activity_type: "logout",
+                  activity_description: "User logged out manually",
+                  page_url: window.location.href,
+                  session_id:
+                    sessionStorage.getItem("sessionId") || "manual-session",
+                  user_agent: navigator.userAgent,
+                },
+              ]);
+
+              console.log("✅ Logout activity saved successfully");
+            }
+
+            // Baru clear session dan redirect setelah database selesai
+            sessionStorage.clear();
+            window.location.href = "story.html";
+          } catch (error) {
+            console.error("❌ Logout error:", error);
+
+            // Tetap logout meski ada error
+            sessionStorage.clear();
+            window.location.href = "story.html";
+          }
         }
 
         function shouldShowLogoutButton() {

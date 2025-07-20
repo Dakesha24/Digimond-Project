@@ -95,7 +95,7 @@
         <div id="dashboardSection" class="content-section">
           <!-- Quick Stats Row -->
           <div class="row mb-4">
-            <div class="col-md-4 mb-3">
+            <div class="col-lg-3 col-md-6 mb-3">
               <div class="stats-card">
                 <div class="stats-icon schools">
                   <i class="bi bi-building"></i>
@@ -104,7 +104,7 @@
                 <div class="stats-label">Total Sekolah</div>
               </div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-lg-3 col-md-6 mb-3">
               <div class="stats-card">
                 <div class="stats-icon students">
                   <i class="bi bi-people"></i>
@@ -113,13 +113,39 @@
                 <div class="stats-label">Total Siswa</div>
               </div>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-lg-3 col-md-6 mb-3">
               <div class="stats-card">
                 <div class="stats-icon active">
                   <i class="bi bi-person-check"></i>
                 </div>
                 <div class="stats-number" id="activeStudents">-</div>
                 <div class="stats-label">Siswa Aktif</div>
+              </div>
+            </div>
+            <!-- ✅ TAMBAH: Card rata-rata baru -->
+            <div class="col-lg-3 col-md-6 mb-3">
+              <div class="stats-card">
+                <div
+                  class="stats-icon"
+                  style="
+                    background: linear-gradient(
+                      135deg,
+                      #667eea 0%,
+                      #764ba2 100%
+                    );
+                  "
+                >
+                  <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stats-number" id="averageDuration">-</div>
+                <div class="stats-label">Rata-rata Login</div>
+                <!-- <div
+                  class="stats-sublabel"
+                  id="sessionCount"
+                  style="font-size: 11px; color: #6c757d; margin-top: 2px"
+                >
+                  -
+                </div> -->
               </div>
             </div>
           </div>
@@ -514,14 +540,27 @@
           // Set loading state for stats
           setStatsLoading(true);
 
-          // Load basic statistics (single optimized query)
-          const stats = await DataService.getDashboardStats();
+          // Load basic statistics and average duration in parallel
+          const [stats, averageData] = await Promise.all([
+            DataService.getDashboardStats(),
+            DataService.getGlobalAverageLoginDuration(),
+          ]);
+
+          // Update stats
           document.getElementById("totalSchools").textContent =
             stats.totalSchools;
           document.getElementById("totalStudents").textContent =
             stats.totalStudents;
           document.getElementById("activeStudents").textContent =
             stats.activeStudents;
+
+          // ✅ TAMBAH: Update average duration
+          document.getElementById("averageDuration").textContent =
+            averageData.formattedDuration;
+          // document.getElementById("sessionCount").textContent =
+          //   averageData.sessionCount > 0
+          //     ? `${averageData.sessionCount} sesi`
+          //     : "Belum ada data";
 
           setStatsLoading(false);
 
@@ -660,6 +699,7 @@
           "totalSchools",
           "totalStudents",
           "activeStudents",
+          "averageDuration",
         ];
         statElements.forEach((id) => {
           const element = document.getElementById(id);
@@ -688,9 +728,7 @@
       async function loadStudents() {
         try {
           AdminUI.showLoading();
-
-          // Load all students
-          allStudents = await DataService.getAllStudents();
+          allStudents = await DataService.getAllStudentsWithAverages();
 
           displayStudents(allStudents);
         } catch (error) {
@@ -711,69 +749,75 @@
         }
 
         const tableHTML = `
-                <div class="admin-table">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Nama</th>
-                                <th>Username</th>
-                                <th>Sekolah</th>
-                                <th>Kelas</th>
-                                <th>Email</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${students
-                              .map(
-                                (student, index) => `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td><strong>${
-                                      student.nama_lengkap
-                                    }</strong></td>
-                                    <td>${student.username}</td>
-                                    <td>${student.asal_sekolah}</td>
-                                    <td><span class="badge bg-secondary">${
-                                      student.kelas
-                                    }</span></td>
-                                    <td>${student.email}</td>
-                                    <td>
-                                        ${
-                                          student.last_login
-                                            ? `<span class="badge bg-success">Aktif</span><br><small class="text-muted">Login: ${AdminUI.formatTimeAgo(
-                                                student.last_login
-                                              )}</small>`
-                                            : '<span class="badge bg-warning">Belum Login</span>'
-                                        }
-                                    </td>
-                                    <td>
-                                        <button class="btn-action view" onclick="viewStudentActivities('${
-                                          student.id
-                                        }', '${student.nama_lengkap}')">
-                                            <i class="bi bi-activity"></i> Aktivitas
-                                        </button>
-                                        <button class="btn-action edit" onclick="editStudent('${
-                                          student.id
-                                        }')">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </button>
-                                        <button class="btn-action delete" onclick="deleteStudent('${
-                                          student.id
-                                        }', '${student.nama_lengkap}')">
-                                            <i class="bi bi-trash"></i> Hapus
-                                        </button>
-                                    </td>
-                                </tr>
-                            `
-                              )
-                              .join("")}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+    <div class="admin-table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>Username</th>
+            <th>Sekolah</th>
+            <th>Kelas</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Rata-rata Login</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${students
+            .map(
+              (student, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td><strong>${student.nama_lengkap}</strong></td>
+                <td>${student.username}</td>
+                <td>${student.asal_sekolah}</td>
+                <td><span class="badge bg-secondary">${
+                  student.kelas
+                }</span></td>
+                <td>${student.email}</td>
+                <td>
+                  ${
+                    student.last_login
+                      ? `<span class="badge bg-success">Aktif</span><br><small class="text-muted">Login: ${AdminUI.formatTimeAgo(
+                          student.last_login
+                        )}</small>`
+                      : '<span class="badge bg-warning">Belum Login</span>'
+                  }
+                </td>
+                <td>
+                  ${
+                    student.averageLoginDuration.sessionCount > 0
+                      ? `<div class="text-primary fw-bold">${student.averageLoginDuration.formattedDuration}</div><small class="text-muted">${student.averageLoginDuration.sessionCount} sesi</small>`
+                      : '<div class="text-muted">-</div><small class="text-muted">Belum ada sesi</small>'
+                  }
+                </td>
+                <td>
+                  <button class="btn-action view" onclick="viewStudentActivities('${
+                    student.id
+                  }', '${student.nama_lengkap}')">
+                    <i class="bi bi-activity"></i> Aktivitas
+                  </button>
+                  <button class="btn-action edit" onclick="editStudent('${
+                    student.id
+                  }')">
+                    <i class="bi bi-pencil"></i> Edit
+                  </button>
+                  <button class="btn-action delete" onclick="deleteStudent('${
+                    student.id
+                  }', '${student.nama_lengkap}')">
+                    <i class="bi bi-trash"></i> Hapus
+                  </button>
+                </td>
+              </tr>
+            `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 
         tableContainer.innerHTML = tableHTML;
       }
@@ -1002,50 +1046,39 @@
                                             activity.activity_type,
                                             activity.activity_description || ""
                                           );
-
-                                        // Debug log untuk troubleshooting
-                                        console.log("Activity row:", {
-                                          type: activity.activity_type,
-                                          description:
-                                            activity.activity_description,
-                                          formatted: actType,
-                                        });
-
                                         return `
-                                            <tr>
-                                                <td>${index + 1}</td>
-                                                <td>
-                                                    <span class="badge bg-${
-                                                      actType.class
-                                                    }">
-                                                        ${actType.text}
-                                                    </span>
-                                                    ${
-                                                      activity.activity_description &&
-                                                      activity.activity_description.includes(
-                                                        "Auto"
-                                                      )
-                                                        ? '<br><small class="text-muted">Sistem</small>'
-                                                        : activity.activity_description &&
-                                                          activity.activity_description.includes(
-                                                            "manual"
-                                                          )
-                                                        ? '<br><small class="text-muted">Manual</small>'
-                                                        : ""
-                                                    }
-                                                </td>
-                                                <td>${AdminUI.formatDate(
-                                                  activity.created_at
-                                                )}</td>
-                                                <td>
-                                                    ${
-                                                      activity.duration
-                                                        ? `<span class="text-success"><i class="bi bi-clock"></i> ${activity.duration}</span>`
-                                                        : '<span class="text-muted">-</span>'
-                                                    }
-                                                </td>
-                                            </tr>
-                                        `;
+    <tr>
+        <td>${index + 1}</td>
+        <td>
+            <span class="badge bg-${actType.class}">
+                ${actType.text}
+            </span>
+            ${
+              // ✅ UBAH: Logic untuk menampilkan label tambahan
+              activity.activity_description &&
+              activity.activity_description.includes(
+                "Auto logout karena tidak ada aktivitas"
+              )
+                ? '<br><small class="text-muted">Timeout</small>'
+                : activity.activity_description &&
+                  activity.activity_description.includes(
+                    "Auto logout karena login baru"
+                  )
+                ? '<br><small class="text-muted">Re-login</small>'
+                : ""
+              // ✅ HAPUS: Semua logic untuk "manual" dan "Manual"
+            }
+        </td>
+        <td>${AdminUI.formatDate(activity.created_at)}</td>
+        <td>
+            ${
+              activity.duration
+                ? `<span class="text-success"><i class="bi bi-clock"></i> ${activity.duration}</span>`
+                : '<span class="text-muted">-</span>'
+            }
+        </td>
+    </tr>
+`;
                                       })
                                       .join("")}
                                 </tbody>

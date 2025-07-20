@@ -147,7 +147,7 @@ const AuthService = {
                 durationText = this.formatDuration(sessionDuration);
             }
 
-            // Log activity with duration - LOGOUT MANUAL
+            // Log activity with duration
             this.logActivity(
                 user.id, 
                 'logout', 

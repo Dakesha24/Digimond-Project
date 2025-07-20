@@ -31,12 +31,12 @@ function initSupabase() {
 // ================================================
 const AdminAuth = {
     // Initialize admin authentication
-    init: function() {
+    init: function () {
         initSupabase();
     },
 
     // Hash password function
-    hashPassword: async function(password) {
+    hashPassword: async function (password) {
         const encoder = new TextEncoder();
         const data = encoder.encode(password);
         const hash = await crypto.subtle.digest('SHA-256', data);
@@ -46,7 +46,7 @@ const AdminAuth = {
     },
 
     // Login admin
-    login: async function(username, password) {
+    login: async function (username, password) {
         try {
             const hashedPassword = await this.hashPassword(password);
 
@@ -67,7 +67,7 @@ const AdminAuth = {
             }
 
             const admin = data[0];
-            
+
             // Simpan data admin ke session storage
             sessionStorage.setItem('adminUser', JSON.stringify({
                 id: admin.id,
@@ -84,25 +84,25 @@ const AdminAuth = {
     },
 
     // Check if admin is logged in
-    isLoggedIn: function() {
+    isLoggedIn: function () {
         const admin = sessionStorage.getItem('adminUser');
         return admin !== null;
     },
 
     // Get current admin data
-    getCurrentAdmin: function() {
+    getCurrentAdmin: function () {
         const adminData = sessionStorage.getItem('adminUser');
         return adminData ? JSON.parse(adminData) : null;
     },
 
     // Logout admin
-    logout: function() {
+    logout: function () {
         sessionStorage.removeItem('adminUser');
         window.location.href = 'admin-login.html';
     },
 
     // Require authentication (redirect if not logged in)
-    requireAuth: function() {
+    requireAuth: function () {
         if (!this.isLoggedIn()) {
             window.location.href = 'admin-login.html';
             return false;
@@ -116,7 +116,7 @@ const AdminAuth = {
 // ================================================
 const DataService = {
     // Get all schools with student count
-    getSchools: async function() {
+    getSchools: async function () {
         try {
             const { data, error } = await supabaseClient
                 .from('users')
@@ -143,7 +143,7 @@ const DataService = {
     },
 
     // Get all students
-    getAllStudents: async function() {
+    getAllStudents: async function () {
         try {
             const { data, error } = await supabaseClient
                 .from('users')
@@ -160,20 +160,20 @@ const DataService = {
     },
 
     // Get student activities with duration calculation
-    getStudentActivitiesWithDuration: async function(studentId) {
+    getStudentActivitiesWithDuration: async function (studentId) {
         try {
             console.log('🔍 Loading activities for student:', studentId);
-            
+
             const { data, error } = await supabaseClient
                 .from('user_activities')
                 .select(`
-                    id,
-                    user_id,
-                    activity_type,
-                    activity_description,
-                    created_at,
-                    users!inner(nama_lengkap, username)
-                `)
+                id,
+                user_id,
+                activity_type,
+                activity_description,
+                created_at,
+                users!inner(nama_lengkap, username)
+            `)
                 .eq('user_id', studentId)
                 .in('activity_type', ['login', 'logout', 'register'])
                 .order('created_at', { ascending: false });
@@ -198,9 +198,10 @@ const DataService = {
 
                 if (activity.activity_type === 'login') {
                     currentLogin = activity;
+                    // ✅ UBAH: Login TIDAK ada durasi
                     activitiesWithDuration.push({
                         ...activity,
-                        duration: null // Will be calculated when logout is found
+                        duration: null // Login tidak tampilkan durasi
                     });
                     console.log('✅ Login found, waiting for logout...');
                 } else if (activity.activity_type === 'logout' && currentLogin) {
@@ -217,16 +218,10 @@ const DataService = {
                         duration
                     });
 
-                    // Update the login activity with duration
-                    const loginIndex = activitiesWithDuration.findIndex(a => a.id === currentLogin.id);
-                    if (loginIndex !== -1) {
-                        activitiesWithDuration[loginIndex].duration = duration;
-                        console.log('✅ Login updated with duration:', duration);
-                    }
-
+                    // ✅ UBAH: Durasi HANYA di logout
                     activitiesWithDuration.push({
                         ...activity,
-                        duration: duration
+                        duration: duration // Logout tampilkan durasi sesi
                     });
 
                     currentLogin = null; // Reset current login
@@ -235,13 +230,13 @@ const DataService = {
                     console.log('⚠️ Logout without matching login');
                     activitiesWithDuration.push({
                         ...activity,
-                        duration: null
+                        duration: null // Logout tanpa login pair tidak ada durasi
                     });
                 } else {
                     // Register or other activities
                     activitiesWithDuration.push({
                         ...activity,
-                        duration: null
+                        duration: null // Activity lain tidak ada durasi
                     });
                 }
             }
@@ -256,8 +251,198 @@ const DataService = {
         }
     },
 
+    // Get average login duration for all students
+    getGlobalAverageLoginDuration: async function () {
+        try {
+            console.log('📊 Calculating global average login duration...');
+
+            // Get all login-logout pairs
+            const { data: activities, error } = await supabaseClient
+                .from('user_activities')
+                .select('user_id, activity_type, created_at')
+                .in('activity_type', ['login', 'logout'])
+                .order('user_id, created_at');
+
+            if (error) throw error;
+
+            // Group by user and calculate durations
+            const userSessions = {};
+            let totalDurations = [];
+
+            activities.forEach(activity => {
+                const userId = activity.user_id;
+                if (!userSessions[userId]) {
+                    userSessions[userId] = [];
+                }
+                userSessions[userId].push(activity);
+            });
+
+            // Calculate durations for each user
+            Object.keys(userSessions).forEach(userId => {
+                const userActivities = userSessions[userId];
+                let currentLogin = null;
+
+                userActivities.forEach(activity => {
+                    if (activity.activity_type === 'login') {
+                        currentLogin = activity;
+                    } else if (activity.activity_type === 'logout' && currentLogin) {
+                        const loginTime = new Date(currentLogin.created_at);
+                        const logoutTime = new Date(activity.created_at);
+                        const durationMs = logoutTime - loginTime;
+
+                        if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) { // Max 24 hours
+                            totalDurations.push(durationMs);
+                        }
+                        currentLogin = null;
+                    }
+                });
+            });
+
+            if (totalDurations.length === 0) {
+                return { averageDuration: 0, sessionCount: 0, formattedDuration: 'Belum ada data' };
+            }
+
+            const averageDurationMs = totalDurations.reduce((sum, duration) => sum + duration, 0) / totalDurations.length;
+
+            console.log(`📈 Global average: ${this.formatDuration(averageDurationMs)} dari ${totalDurations.length} sesi`);
+
+            return {
+                averageDuration: averageDurationMs,
+                sessionCount: totalDurations.length,
+                formattedDuration: this.formatDuration(averageDurationMs)
+            };
+        } catch (error) {
+            console.error('❌ Error calculating global average:', error);
+            return { averageDuration: 0, sessionCount: 0, formattedDuration: 'Error' };
+        }
+    },
+
+    getStudentAverageLoginDuration: async function (studentId) {
+        try {
+            const { data: activities, error } = await supabaseClient
+                .from('user_activities')
+                .select('activity_type, created_at')
+                .eq('user_id', studentId)
+                .in('activity_type', ['login', 'logout'])
+                .order('created_at');
+
+            if (error) throw error;
+
+            let durations = [];
+            let currentLogin = null;
+
+            activities.forEach(activity => {
+                if (activity.activity_type === 'login') {
+                    currentLogin = activity;
+                } else if (activity.activity_type === 'logout' && currentLogin) {
+                    const loginTime = new Date(currentLogin.created_at);
+                    const logoutTime = new Date(activity.created_at);
+                    const durationMs = logoutTime - loginTime;
+
+                    if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) { // Max 24 hours
+                        durations.push(durationMs);
+                    }
+                    currentLogin = null;
+                }
+            });
+
+            if (durations.length === 0) {
+                return { averageDuration: 0, sessionCount: 0, formattedDuration: '-' };
+            }
+
+            const averageDurationMs = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
+
+            return {
+                averageDuration: averageDurationMs,
+                sessionCount: durations.length,
+                formattedDuration: this.formatDuration(averageDurationMs)
+            };
+        } catch (error) {
+            console.error('❌ Error calculating student average:', error);
+            return { averageDuration: 0, sessionCount: 0, formattedDuration: '-' };
+        }
+    },
+
+    getAllStudentsWithAverages: async function () {
+        try {
+            console.log('📊 Loading students with average durations...');
+
+            // Get all students
+            const { data: students, error: studentsError } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('is_active', true)
+                .order('nama_lengkap');
+
+            if (studentsError) throw studentsError;
+
+            // Get all activities in one query
+            const { data: allActivities, error: activitiesError } = await supabaseClient
+                .from('user_activities')
+                .select('user_id, activity_type, created_at')
+                .in('activity_type', ['login', 'logout'])
+                .order('user_id, created_at');
+
+            if (activitiesError) throw activitiesError;
+
+            // Group activities by user
+            const userActivities = {};
+            allActivities.forEach(activity => {
+                const userId = activity.user_id;
+                if (!userActivities[userId]) {
+                    userActivities[userId] = [];
+                }
+                userActivities[userId].push(activity);
+            });
+
+            // Calculate averages for each student
+            const studentsWithAverages = students.map(student => {
+                const activities = userActivities[student.id] || [];
+                let durations = [];
+                let currentLogin = null;
+
+                activities.forEach(activity => {
+                    if (activity.activity_type === 'login') {
+                        currentLogin = activity;
+                    } else if (activity.activity_type === 'logout' && currentLogin) {
+                        const loginTime = new Date(currentLogin.created_at);
+                        const logoutTime = new Date(activity.created_at);
+                        const durationMs = logoutTime - loginTime;
+
+                        if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) {
+                            durations.push(durationMs);
+                        }
+                        currentLogin = null;
+                    }
+                });
+
+                let averageStats;
+                if (durations.length === 0) {
+                    averageStats = { averageDuration: 0, sessionCount: 0, formattedDuration: '-' };
+                } else {
+                    const averageDurationMs = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
+                    averageStats = {
+                        averageDuration: averageDurationMs,
+                        sessionCount: durations.length,
+                        formattedDuration: this.formatDuration(averageDurationMs)
+                    };
+                }
+
+                return {
+                    ...student,
+                    averageLoginDuration: averageStats
+                };
+            });
+
+            return studentsWithAverages;
+        } catch (error) {
+            console.error('❌ Error loading students with averages:', error);
+            return [];
+        }
+    },
+
     // Format duration in human readable format
-    formatDuration: function(milliseconds) {
+    formatDuration: function (milliseconds) {
         const seconds = Math.floor(milliseconds / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
@@ -274,7 +459,7 @@ const DataService = {
     },
 
     // Get recent logins (today) - OPTIMIZED VERSION
-    getRecentLogins: async function(limit = 5) {
+    getRecentLogins: async function (limit = 5) {
         try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -300,7 +485,7 @@ const DataService = {
     },
 
     // Get dashboard statistics - OPTIMIZED VERSION
-    getDashboardStats: async function() {
+    getDashboardStats: async function () {
         try {
             // Single query untuk semua data user
             const { data: allUsers, error: usersError } = await supabaseClient
@@ -317,7 +502,7 @@ const DataService = {
             // Get active students (logged in last 7 days)
             const activeDate = new Date();
             activeDate.setDate(activeDate.getDate() - 7);
-            const activeStudents = allUsers.filter(u => 
+            const activeStudents = allUsers.filter(u =>
                 u.last_login && new Date(u.last_login) >= activeDate
             ).length;
 
@@ -337,7 +522,7 @@ const DataService = {
     },
 
     // Add new student
-    addStudent: async function(studentData) {
+    addStudent: async function (studentData) {
         try {
             // Check if username or email already exists
             const { data: existingUser, error: checkError } = await supabaseClient
@@ -350,7 +535,7 @@ const DataService = {
             if (existingUser && existingUser.length > 0) {
                 const existingUsername = existingUser.some(u => u.username === studentData.username);
                 const existingEmail = existingUser.some(u => u.email === studentData.email);
-                
+
                 if (existingUsername) {
                     return { success: false, error: 'Username sudah digunakan' };
                 }
@@ -382,7 +567,7 @@ const DataService = {
     },
 
     // Update student
-    updateStudent: async function(studentId, studentData) {
+    updateStudent: async function (studentId, studentData) {
         try {
             // Check if username or email already exists (excluding current student)
             const { data: existingUser, error: checkError } = await supabaseClient
@@ -396,7 +581,7 @@ const DataService = {
             if (existingUser && existingUser.length > 0) {
                 const existingUsername = existingUser.some(u => u.username === studentData.username);
                 const existingEmail = existingUser.some(u => u.email === studentData.email);
-                
+
                 if (existingUsername) {
                     return { success: false, error: 'Username sudah digunakan oleh siswa lain' };
                 }
@@ -433,7 +618,7 @@ const DataService = {
     },
 
     // Delete student and their activities
-    deleteStudent: async function(studentId) {
+    deleteStudent: async function (studentId) {
         try {
             // Delete activities first (due to foreign key constraint)
             await supabaseClient
@@ -461,7 +646,7 @@ const DataService = {
 // ================================================
 const AdminUI = {
     // Show alert message
-    showAlert: function(message, type = 'info', containerId = 'alertContainer') {
+    showAlert: function (message, type = 'info', containerId = 'alertContainer') {
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -486,7 +671,7 @@ const AdminUI = {
     },
 
     // Get alert icon based on type
-    getAlertIcon: function(type) {
+    getAlertIcon: function (type) {
         const icons = {
             success: 'check-circle',
             danger: 'exclamation-triangle',
@@ -497,7 +682,7 @@ const AdminUI = {
     },
 
     // Clear all alerts
-    clearAlerts: function(containerId = 'alertContainer') {
+    clearAlerts: function (containerId = 'alertContainer') {
         const container = document.getElementById(containerId);
         if (container) {
             container.innerHTML = '';
@@ -505,7 +690,7 @@ const AdminUI = {
     },
 
     // Set button loading state
-    setButtonLoading: function(button, loading) {
+    setButtonLoading: function (button, loading) {
         if (loading) {
             button.disabled = true;
             button.dataset.originalText = button.innerHTML;
@@ -517,10 +702,10 @@ const AdminUI = {
     },
 
     // Show loading overlay
-    showLoading: function() {
+    showLoading: function () {
         // Remove existing overlay first
         this.hideLoading();
-        
+
         const loadingHTML = `
             <div class="loading-overlay" id="loadingOverlay">
                 <div class="loading-spinner"></div>
@@ -530,7 +715,7 @@ const AdminUI = {
     },
 
     // Hide loading overlay
-    hideLoading: function() {
+    hideLoading: function () {
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
             overlay.remove();
@@ -538,7 +723,7 @@ const AdminUI = {
     },
 
     // Format date for display
-    formatDate: function(dateString) {
+    formatDate: function (dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('id-ID', {
             year: 'numeric',
@@ -550,7 +735,7 @@ const AdminUI = {
     },
 
     // Format login time (just hour:minute for recent logins)
-    formatLoginTime: function(dateString) {
+    formatLoginTime: function (dateString) {
         const date = new Date(dateString);
         return date.toLocaleTimeString('id-ID', {
             hour: '2-digit',
@@ -559,7 +744,7 @@ const AdminUI = {
     },
 
     // Format time ago (e.g., "2 jam lalu")
-    formatTimeAgo: function(dateString) {
+    formatTimeAgo: function (dateString) {
         const now = new Date();
         const date = new Date(dateString);
         const diffMs = now - date;
@@ -581,53 +766,48 @@ const AdminUI = {
     },
 
     // Format activity type for display with enhanced logout types
-    formatActivityType: function(type, description = '') {
+    formatActivityType: function (type, description = '') {
         if (type === 'logout') {
             // Debug log untuk troubleshooting
-            console.log('🔍 Logout Detection:', { 
-                type, 
+            console.log('🔍 Logout Detection:', {
+                type,
                 description,
                 hasDescription: !!description,
-                descriptionLength: description.length 
+                descriptionLength: description.length
             });
-            
+
             // Cek pattern Auto logout dulu (lebih spesifik)
-            if (description.includes('Auto logout karena tidak ada aktivitas') || 
+            if (description.includes('Auto logout karena tidak ada aktivitas') ||
                 description.toLowerCase().includes('auto logout') && description.includes('tidak ada aktivitas')) {
                 return { text: 'Auto Logout (Idle)', class: 'warning' };
             }
-            
-            if (description.includes('Auto logout karena login baru') || 
+
+            if (description.includes('Auto logout karena login baru') ||
                 description.toLowerCase().includes('auto logout') && description.includes('login baru')) {
-                return { text: 'Auto Logout (Re-login)', class: 'info' };
+                return { text: 'Logout Otomatis', class: 'info' };
             }
-            
-            // Manual logout patterns (lebih fleksibel)
-            if (description.includes('User logged out manually') || 
+
+            // ✅ UBAH: Manual logout patterns - GANTI "Logout Manual" jadi "Logout"
+            if (description.includes('User logged out manually') ||
                 description.includes('logged out manually') ||
                 description.includes('berhasil logout') ||
                 description.includes('User logout') ||
                 description.toLowerCase().includes('manual') ||
                 // Jika ada description tapi tidak mengandung 'Auto'
                 (description && description.length > 0 && !description.toLowerCase().includes('auto'))) {
-                return { text: 'Logout Manual', class: 'danger' };
+                return { text: 'Logout', class: 'danger' }; // ← UBAH INI
             }
-            
+
             // Fallback untuk description kosong atau tidak dikenal
-            console.warn('⚠️ Unknown logout type, defaulting to Manual:', description);
-            return { text: 'Logout Manual', class: 'danger' };
+            console.warn('⚠️ Unknown logout type, defaulting to Logout:', description);
+            return { text: 'Logout', class: 'danger' }; // ← UBAH INI
         }
-        
+
         const types = {
             login: { text: 'Login', class: 'success' },
             register: { text: 'Registrasi', class: 'info' }
         };
         return types[type] || { text: type, class: 'secondary' };
-    },
-
-    // Confirm dialog
-    confirm: function(message, title = 'Konfirmasi') {
-        return confirm(`${title}\n\n${message}`);
     }
 };
 
@@ -641,29 +821,29 @@ window.AdminUI = AdminUI;
 // ================================================
 // AUTO INITIALIZATION
 // ================================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize admin system if not already initialized
     if (typeof AdminAuth !== 'undefined') {
         AdminAuth.init();
     }
 
-                const sidebarToggle = document.getElementById('sidebarToggle');
-            const adminSidebar = document.getElementById('adminSidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-            if (sidebarToggle) {
-                // Saat tombol hamburger di-klik
-                sidebarToggle.addEventListener('click', function() {
-                    adminSidebar.classList.toggle('show');
-                    sidebarOverlay.classList.toggle('show');
-                });
-            }
+    if (sidebarToggle) {
+        // Saat tombol hamburger di-klik
+        sidebarToggle.addEventListener('click', function () {
+            adminSidebar.classList.toggle('show');
+            sidebarOverlay.classList.toggle('show');
+        });
+    }
 
-            if (sidebarOverlay) {
-                // Saat overlay gelap di-klik (untuk menutup sidebar)
-                sidebarOverlay.addEventListener('click', function() {
-                    adminSidebar.classList.remove('show');
-                    sidebarOverlay.classList.remove('show');
-                });
-            }
+    if (sidebarOverlay) {
+        // Saat overlay gelap di-klik (untuk menutup sidebar)
+        sidebarOverlay.addEventListener('click', function () {
+            adminSidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+        });
+    }
 });
