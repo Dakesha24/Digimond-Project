@@ -1146,7 +1146,7 @@
 
       async function deleteStudent(studentId, studentName) {
         if (
-          !AdminUI.confirm(
+          !window.confirm(
             `Yakin ingin menghapus siswa "${studentName}"?\n\nSemua log aktivitas siswa juga akan terhapus.`
           )
         ) {
