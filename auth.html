@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
   <head>
+    <link rel="icon" type="image/x-icon" href="/digimod-logo.webp">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Digimod Vektars</title>
@@ -514,7 +515,7 @@
       const supabaseUrl = "https://jkkdlbamzokbwwygtmel.supabase.co";
       const supabaseKey =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impra2RsYmFtem9rYnd3eWd0bWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjEzOTEsImV4cCI6MjA2ODI5NzM5MX0.HNGpazUiCiykLcBdW_ITKmbXFDhSlIZVLKPjUR2mgP0";
-      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+      supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
       // Elements
       const loginForm = document.getElementById("login-form");
